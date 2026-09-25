@@ -18,6 +18,7 @@
 		A10000000000000000000010 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* HomeView.swift */; };
 		A10000000000000000000011 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* SearchView.swift */; };
 		A10000000000000000000012 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* LibraryView.swift */; };
+		A10000000000000000000014 /* FullPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* FullPlayerView.swift */; };
 		A10000000000000000000013 /* LocalMusicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* LocalMusicTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +38,7 @@
 		A20000000000000000000013 /* LocalMusicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMusicTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* LocalMusic.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LocalMusic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000015 /* LocalMusicTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LocalMusicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000016 /* FullPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullPlayerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,7 +52,7 @@
 		A40000000000000000000003 /* App */ = {isa = PBXGroup; children = (A20000000000000000000001 /* LocalMusicApp.swift */); path = App; sourceTree = "<group>"; };
 		A40000000000000000000004 /* Models */ = {isa = PBXGroup; children = (A20000000000000000000002 /* Song.swift */); path = Models; sourceTree = "<group>"; };
 		A40000000000000000000005 /* Services */ = {isa = PBXGroup; children = (A20000000000000000000003 /* MetadataService.swift */, A20000000000000000000004 /* MusicImportService.swift */, A20000000000000000000005 /* AudioPlayerService.swift */); path = Services; sourceTree = "<group>"; };
-		A40000000000000000000006 /* Views */ = {isa = PBXGroup; children = (A20000000000000000000009 /* AppShellView.swift */, A20000000000000000000010 /* HomeView.swift */, A20000000000000000000011 /* SearchView.swift */, A20000000000000000000012 /* LibraryView.swift */); path = Views; sourceTree = "<group>"; };
+		A40000000000000000000006 /* Views */ = {isa = PBXGroup; children = (A20000000000000000000009 /* AppShellView.swift */, A20000000000000000000010 /* HomeView.swift */, A20000000000000000000011 /* SearchView.swift */, A20000000000000000000012 /* LibraryView.swift */, A20000000000000000000016 /* FullPlayerView.swift */); path = Views; sourceTree = "<group>"; };
 		A40000000000000000000007 /* LocalMusicTests */ = {isa = PBXGroup; children = (A20000000000000000000013 /* LocalMusicTests.swift */); path = LocalMusicTests; sourceTree = "<group>"; };
 		A40000000000000000000008 /* Products */ = {isa = PBXGroup; children = (A20000000000000000000014 /* LocalMusic.app */, A20000000000000000000015 /* LocalMusicTests.xctest */); name = Products; sourceTree = "<group>"; };
 		A40000000000000000000009 /* Components */ = {isa = PBXGroup; children = (A20000000000000000000006 /* ArtworkView.swift */, A20000000000000000000007 /* MiniPlayer.swift */, A20000000000000000000008 /* SongRow.swift */); path = Components; sourceTree = "<group>"; };
@@ -71,7 +73,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A70000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007, A10000000000000000000008, A10000000000000000000009, A10000000000000000000010, A10000000000000000000011, A10000000000000000000012); runOnlyForDeploymentPostprocessing = 0; };
+		A70000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007, A10000000000000000000008, A10000000000000000000009, A10000000000000000000010, A10000000000000000000011, A10000000000000000000012, A10000000000000000000014); runOnlyForDeploymentPostprocessing = 0; };
 		A70000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000013); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

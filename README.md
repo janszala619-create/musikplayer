@@ -10,6 +10,7 @@ Eine lokale iOS-Musikbibliothek für eigene Dateien. V1 nutzt SwiftUI, SwiftData
 - Metadaten (Titel, Künstler, Album, Dauer und Artwork), wenn in der Datei vorhanden; verständliche Fallbacks sonst
 - SwiftData-basierte lokale Bibliothek
 - Song antippen: Wiedergabe starten; Mini-Player mit Play/Pause
+- Vollbild-Player durch Antippen des Mini-Players, mit Artwork, Fortschritt und ±15-Sekunden-Sprüngen
 - Import- und Wiedergabefehler werden in der Oberfläche angezeigt
 
 ## Windows → GitHub → IPA

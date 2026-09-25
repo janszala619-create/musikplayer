@@ -5,6 +5,7 @@ import SwiftData
 struct AppShellView: View {
     @Environment(AudioPlayerService.self) private var player
     @Query(sort: \Song.importedAt, order: .reverse) private var songs: [Song]
+    @State private var playerSheetSong: Song?
 
     private var currentSong: Song? {
         songs.first { $0.id == player.currentSongID }
@@ -20,7 +21,12 @@ struct AppShellView: View {
                 .tabItem { Label("Bibliothek", systemImage: "books.vertical") }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            MiniPlayer(song: currentSong)
+            MiniPlayer(song: currentSong) {
+                playerSheetSong = currentSong
+            }
+        }
+        .sheet(item: $playerSheetSong) { song in
+            FullPlayerView(song: song)
         }
         .alert("Wiedergabe nicht möglich", isPresented: Binding(
             get: { player.errorMessage != nil },

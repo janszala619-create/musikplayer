@@ -42,6 +42,18 @@ final class AudioPlayerService {
         isPlaying.toggle()
     }
 
+    var currentTime: TimeInterval {
+        guard let seconds = player?.currentTime().seconds, seconds.isFinite else { return 0 }
+        return max(0, seconds)
+    }
+
+    func seek(by seconds: TimeInterval) {
+        guard let player else { return }
+        let duration = player.currentItem?.duration.seconds ?? 0
+        let target = min(max(0, currentTime + seconds), duration.isFinite ? duration : currentTime)
+        player.seek(to: CMTime(seconds: target, preferredTimescale: 600))
+    }
+
     private func configureAudioSession() throws {
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback, mode: .default)
