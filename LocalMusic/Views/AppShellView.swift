@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 struct AppShellView: View {
     @Environment(AudioPlayerService.self) private var player
     @Query(sort: \Song.importedAt, order: .reverse) private var songs: [Song]

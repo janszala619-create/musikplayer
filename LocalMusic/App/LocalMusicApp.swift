@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
+@MainActor
 struct LocalMusicApp: App {
     @State private var player = AudioPlayerService()
 

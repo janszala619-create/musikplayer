@@ -16,15 +16,23 @@ enum MetadataService {
         let duration = try await asset.load(.duration)
         let fallbackTitle = url.deletingPathExtension().lastPathComponent
 
-        func value(for key: AVMetadataKey) -> String? {
-            metadata.first(where: { $0.commonKey == key })?.stringValue
+        func value(for key: AVMetadataKey) async throws -> String? {
+            guard let item = metadata.first(where: { $0.commonKey == key }) else {
+                return nil
+            }
+            return try await item.load(.stringValue)
         }
 
-        let artwork = metadata.first(where: { $0.commonKey == .commonKeyArtwork })?.dataValue
+        let artwork: Data?
+        if let item = metadata.first(where: { $0.commonKey == .commonKeyArtwork }) {
+            artwork = try await item.load(.dataValue)
+        } else {
+            artwork = nil
+        }
         return ExtractedMetadata(
-            title: value(for: .commonKeyTitle) ?? fallbackTitle,
-            artist: value(for: .commonKeyArtist) ?? "Unbekannter Künstler",
-            album: value(for: .commonKeyAlbumName) ?? "Unbekanntes Album",
+            title: try await value(for: .commonKeyTitle) ?? fallbackTitle,
+            artist: try await value(for: .commonKeyArtist) ?? "Unbekannter Künstler",
+            album: try await value(for: .commonKeyAlbumName) ?? "Unbekanntes Album",
             duration: duration.isNumeric ? duration.seconds : 0,
             artworkData: artwork
         )
