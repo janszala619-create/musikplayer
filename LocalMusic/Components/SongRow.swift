@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct SongRow: View {
@@ -14,10 +15,15 @@ struct SongRow: View {
                     .lineLimit(1)
             }
             Spacer()
-            Text(song.duration, format: .time(pattern: .minuteSecond))
+            Text(durationText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
+    }
+
+    private var durationText: String {
+        let totalSeconds = max(0, Int(song.duration.rounded()))
+        return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 }

@@ -1,11 +1,12 @@
 import AVFoundation
+import Combine
 import Observation
 
 @MainActor
 @Observable
 final class AudioPlayerService {
     private var player: AVPlayer?
-    private var endObserver: NSObjectProtocol?
+    private var endCancellable: AnyCancellable?
 
     private(set) var currentSongID: UUID?
     private(set) var isPlaying = false
@@ -48,14 +49,12 @@ final class AudioPlayerService {
     }
 
     private func observeEnd(of player: AVPlayer) {
-        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
-        endObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.isPlaying = false }
-        }
+        endCancellable = NotificationCenter.default
+            .publisher(for: .AVPlayerItemDidPlayToEndTime, object: player.currentItem)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.isPlaying = false
+            }
     }
 }
 
