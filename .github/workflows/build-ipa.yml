@@ -1,0 +1,71 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'LocalMusic/**'
+      - 'LocalMusicTests/**'
+      - 'LocalMusic.xcodeproj/**'
+      - '.github/workflows/build-ipa.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show installed Xcode
+        run: xcodebuild -version
+
+      - name: Select an available iPhone simulator
+        shell: bash
+        run: |
+          simulator_id="$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              for device in devices[runtime]:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit
+          raise SystemExit("No available iPhone simulator found")
+          ')"
+          echo "SIMULATOR_ID=$simulator_id" >> "$GITHUB_ENV"
+
+      - name: Build for iOS Simulator
+        run: >-
+          xcodebuild -project LocalMusic.xcodeproj -scheme LocalMusic
+          -sdk iphonesimulator -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+      - name: Run unit tests
+        run: >-
+          xcodebuild -project LocalMusic.xcodeproj -scheme LocalMusic
+          -sdk iphonesimulator -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test
+
+      - name: Build unsigned device app
+        run: >-
+          xcodebuild -project LocalMusic.xcodeproj -scheme LocalMusic
+          -sdk iphoneos -configuration Release -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p ipa/Payload
+          cp -R build/Build/Products/Release-iphoneos/LocalMusic.app ipa/Payload/
+          ditto -c -k --sequesterRsrc --keepParent ipa/Payload LocalMusic-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalMusic-unsigned-ipa
+          path: LocalMusic-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
