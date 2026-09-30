@@ -119,3 +119,42 @@ beide App-Namensfelder sowie die tatsächlich enthaltenen iPhone-/iPad-Icons.
 ## Phase 2
 
 Als Nächstes bieten sich Lockscreen-Steuerung, Queue, Shuffle/Repeat, Playlists und Bearbeiten der Bibliothek an.
+
+## Audyn 0.3.0 (4): Playlists, Favoriten und Songdaten
+
+Die dunkle Oberfläche orientiert sich an den bereitgestellten SoundCloud-/Spotify-Beispielen,
+mit mintfarbenem Audyn-Akzent, Playlist-Covern, Favoriten und Mini-Player oberhalb der Tabs.
+
+- Bibliothek → Erstellen: lokale Playlist anlegen. Playlist öffnen → Songs hinzufügen:
+  mehrere importierte Songs auswählen. Neue Playlists dürfen zunächst leer sein.
+- Playlist → Stift: Namen ändern. Bearbeiten: Reihenfolge per Griff ändern oder Songs
+  aus der Playlist entfernen. Löschen in der Playlist-Übersicht löscht nur die Sammlung.
+- Song → Drei-Punkte-Menü: zu Playlist hinzufügen, Favorit setzen, Titel/Künstler/Album ändern.
+  Titel ist erforderlich; leere Künstler-/Albumfelder erhalten den üblichen Platzhalter.
+  Manuelle Angaben werden von der automatischen Metadaten-Reparatur nicht überschrieben.
+  Es werden Bibliotheksangaben geändert, keine Tags oder Namen der Originaldateien.
+- Favoriten sind über Home und Bibliothek erreichbar und bleiben nach Neustart gespeichert.
+- Player: Warteschlange, nächster/vorheriger Song, Positionsregler, Shuffle, Wiederholen
+  (aus / alle / ein Song). Playlists spielen automatisch weiter.
+- Beim Löschen eines Songs aus der Bibliothek werden seine Playlist-Verweise und
+  Warteschlangen-Einträge entfernt. Beim Löschen des laufenden Songs stoppt der Player.
+
+SwiftData speichert Playlists und Songänderungen lokal. Neue Songfelder haben Standardwerte;
+bestehende Audio-Dateien und App-Kennung bleiben erhalten. Die Sammlungen verwenden geordnete
+Song-IDs, damit die Reihenfolge dauerhaft gespeichert und ein Song nur einmal enthalten ist.
+Die Migration einer bereits installierten 0.2.0-Bibliothek muss vor Auslieferung auf einem
+iPhone oder Simulator überprüft werden.
+
+Prüfen in Xcode / GitHub Actions:
+1. Simulator-Build und Unit-Tests ausführen. Neue Tests prüfen Wiederöffnen des persistenten
+   Stores, Favoriten, manuelle Metadaten, Playlist-Reihenfolge, Löschverhalten und Queue.
+2. App mit bestehender 0.2.0-Bibliothek aktualisieren; vorhandene Songs müssen erhalten bleiben.
+3. Playlist erstellen, Songs hinzufügen/verschieben, App neu starten: Name/Reihenfolge bleiben.
+4. Titel/Künstler korrigieren, Favorit setzen, App neu starten: Änderungen bleiben.
+5. Zwei Songs einer Playlist abspielen; automatischen Wechsel, Shuffle/Repeat und Suchfilter testen.
+6. Mini-Player und Tab-Wechsel sowie Hintergrundwiedergabe auf dem iPhone prüfen.
+
+Auf dem Windows-Arbeitsplatz steht Xcode nicht zur Verfügung. Ein erfolgreicher iOS-Build,
+Simulator-Screenshots und das fertige IPA sind erst durch den macOS-Workflow bestätigbar.
+Apple-Referenzen: [SwiftData-Persistenz](https://developer.apple.com/documentation/swiftdata/preserving-your-apps-model-data-across-launches)
+und [Listen-Reihenfolge](https://developer.apple.com/documentation/swiftui/dynamicviewcontent/onmove(perform:)).

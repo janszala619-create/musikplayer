@@ -88,6 +88,7 @@ enum MusicImportService {
     static func repairLegacySongs(in context: ModelContext) async {
         do {
             let pending = try context.fetch(FetchDescriptor<Song>()).filter {
+                guard !$0.hasManualMetadata else { return false }
                 let fileText = MetadataFallback.originalFileNameText($0.originalFileName)
                 return $0.metadataVersion < currentMetadataVersion
                     || MetadataFallback.usableText($0.title) == nil
@@ -129,6 +130,7 @@ enum MusicImportService {
     }
 
     static func applyLegacyRepair(to song: Song, metadata: ExtractedMetadata?, originalFileName: String?) {
+        guard !song.hasManualMetadata else { return }
         func existingValue(_ value: String, placeholder: String) -> String? {
             guard let usable = MetadataFallback.usableText(value), usable != placeholder else { return nil }
             return usable
@@ -167,6 +169,13 @@ enum MusicImportService {
                   song.fileName == (song.fileName as NSString).lastPathComponent,
                   !song.fileName.contains("\\") else { throw MusicImportError.cannotAccessFile }
             return try fileURL(for: song)
+        }
+        if context.container.schema.entities.contains(where: { $0.name == "Playlist" }) {
+            let removedIDs = Set(songs.map(\.id))
+            let playlists = try context.fetch(FetchDescriptor<Playlist>())
+            for playlist in playlists {
+                playlist.songIDs.removeAll { removedIDs.contains($0) }
+            }
         }
         for song in songs { context.delete(song) }
         do {

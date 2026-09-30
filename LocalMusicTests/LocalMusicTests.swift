@@ -24,7 +24,7 @@ final class LocalMusicTests: XCTestCase {
 
     @MainActor
     func testDeletionRejectsPathsOutsideThePrivateAudioFolder() throws {
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let song = Song(title: "Keep", artist: "Artist", album: "Album", duration: 42, fileName: "../other.wav")
         container.mainContext.insert(song)
         try container.mainContext.save()
@@ -44,7 +44,7 @@ final class LocalMusicTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = try makeWAV(in: directory)
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         try await MusicImportService.importFile(from: source, into: container.mainContext)
         let song = try XCTUnwrap(container.mainContext.fetch(FetchDescriptor<Song>()).first)
         let storedURL = try MusicImportService.fileURL(for: song)
@@ -63,8 +63,8 @@ final class LocalMusicTests: XCTestCase {
     func testInstalledAppHasBackgroundAudioCapabilityAndIdentifiableVersion() {
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         XCTAssertTrue(modes?.contains("audio") == true, "The built app, not just its project settings, must declare background audio.")
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.2.0")
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "3")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.3.0")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "4")
     }
 
     @MainActor
@@ -91,7 +91,7 @@ final class LocalMusicTests: XCTestCase {
 
     @MainActor
     func testUUIDRecordIsRepairedEvenIfAlreadyMarkedCurrent() async throws {
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let song = Song(title: UUID().uuidString, artist: MetadataFallback.unknownArtist, album: MetadataFallback.unknownAlbum, duration: 42, fileName: "\(UUID().uuidString).mp4", originalFileName: "Kobosil - You Need The Drug.mp4", metadataVersion: MusicImportService.currentMetadataVersion)
         container.mainContext.insert(song)
         try container.mainContext.save()
@@ -108,7 +108,7 @@ final class LocalMusicTests: XCTestCase {
         let wav = try makeWAV(in: directory)
         let source = directory.appendingPathComponent("Kobosil - Navigation Test.wav")
         try FileManager.default.copyItem(at: wav, to: source)
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         try await MusicImportService.importFile(from: source, into: container.mainContext)
         let song = try XCTUnwrap(container.mainContext.fetch(FetchDescriptor<Song>()).first)
         defer {
@@ -300,7 +300,7 @@ final class LocalMusicTests: XCTestCase {
 
     @MainActor
     func testRepairIsPersistedAndOnlyRunsOnce() async throws {
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = container.mainContext
         let song = Song(title: UUID().uuidString, artist: MetadataFallback.unknownArtist, album: MetadataFallback.unknownAlbum, duration: 42, fileName: "\(UUID().uuidString).m4a", originalFileName: "Kobosil - Song.m4a")
         context.insert(song)
@@ -339,7 +339,7 @@ final class LocalMusicTests: XCTestCase {
         let taggedMP4Data = try XCTUnwrap(Data(base64Encoded: "AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAzW1kYXTeAgBMYXZjNjEuMTkuMTAwAAIwQA4BGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwAABIRtb292AAAAbG12aGQAAAAAAAAAAAAAAAAAAAPoAAAD6AABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAC7XRyYWsAAABcdGtoZAAAAAMAAAAAAAAAAAAAAAEAAAAAAAAD6AAAAAAAAAAAAAAAAQEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAA+gAAAQAAAEAAAAAAmVtZGlhAAAAIG1kaGQAAAAAAAAAAAAAAAAAAKxEAACwRFXEAAAAAAAtaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAAIQbWluZgAAABBzbWhkAAAAAAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAHUc3RibAAAAH5zdHNkAAAAAAAAAAEAAABubXA0YQAAAAAAAAABAAAAAAAAAAAAAQAQAAAAAKxEAAAAAAA2ZXNkcwAAAAADgICAJQABAASAgIAXQBUAAAAAAH0AAAAGBAWAgIAFEghW5QAGgICAAQIAAAAUYnRydAAAAAAAAH0AAAAGBAAAACBzdHRzAAAAAAAAAAIAAAAsAAAEAAAAAAEAAABEAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAAtAAAAAQAAAMhzdHN6AAAAAAAAAAAAAAAtAAAAFQAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAAFHN0Y28AAAAAAAAAAQAAACwAAAAac2dwZAEAAAByb2xsAAAAAgAAAAH//wAAABxzYmdwAAAAAHJvbGwAAAABAAAALQAAAAEAAAEjdWR0YQAAARttZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAO5pbHN0AAAAJqluYW0AAAAeZGF0YQAAAAEAAAAARW1iZWRkZWQgVGl0bGUAAAAmqWFsYgAAAB5kYXRhAAAAAQAAAABFbWJlZGRlZCBBbGJ1bQAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2MS43LjEwMAAAAHZjb3ZyAAAAbmRhdGEAAAAOAAAAAIlQTkcNChoKAAAADUlIRFIAAAACAAAAAggCAAAA/dSacwAAAAlwSFlzAAAAAQAAAAEATyXE1gAAABBJREFUeJxj+MvAAEQMEAoAH64D9fYYKlkAAAAASUVORK5CYII="))
         let taggedMP4Cover = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAABAAAAAQBPJcTWAAAAEElEQVR4nGP4y8AARAwQCgAfrgP19hgqWQAAAABJRU5ErkJggg=="))
         try taggedMP4Data.write(to: taggedMP4)
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         for source in [m4a, mp4, taggedMP4] {
             try await MusicImportService.importFile(from: source, into: container.mainContext)
         }
@@ -374,7 +374,7 @@ final class LocalMusicTests: XCTestCase {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp3")
         try Data("not audio".utf8).write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         do {
             try await MusicImportService.importFile(from: url, into: container.mainContext)
             XCTFail("Unusable audio must fail")
@@ -391,7 +391,7 @@ final class LocalMusicTests: XCTestCase {
         let source = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp3")
         try data.write(to: source)
         defer { try? FileManager.default.removeItem(at: source) }
-        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         try await MusicImportService.importFile(from: source, into: container.mainContext)
         let song = try XCTUnwrap(ModelContext(container).fetch(FetchDescriptor<Song>()).first)
         defer { if let url = try? MusicImportService.fileURL(for: song) { try? FileManager.default.removeItem(at: url) } }
@@ -418,7 +418,7 @@ final class LocalMusicTests: XCTestCase {
             legacy.mainContext.insert(LegacyStore.Song(id: id, artworkData: cover))
             try legacy.mainContext.save()
         }
-        let schema = Schema([Song.self])
+        let schema = Schema([Song.self, Playlist.self])
         let migrated = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: storeURL)])
         let song = try XCTUnwrap(migrated.mainContext.fetch(FetchDescriptor<Song>()).first)
         XCTAssertEqual(song.id, id)
@@ -428,6 +428,9 @@ final class LocalMusicTests: XCTestCase {
         XCTAssertNil(song.originalFileName)
         XCTAssertEqual(song.metadataVersion, 0)
         XCTAssertEqual(song.displayTitle, MetadataFallback.unknownTitle)
+        XCTAssertFalse(song.isFavorite)
+        XCTAssertFalse(song.hasManualMetadata)
+        XCTAssertTrue(try migrated.mainContext.fetch(FetchDescriptor<Playlist>()).isEmpty)
     }
 
     private func tag(_ identifier: AVMetadataIdentifier, _ value: NSCopying & NSObjectProtocol) -> AVMetadataItem {
@@ -495,6 +498,193 @@ private enum LegacyStore {
             self.duration = 42
             self.fileName = "\(id.uuidString).mp3"
             self.artworkData = artworkData
+            self.importedAt = .now
+        }
+    }
+}
+
+@MainActor
+final class LibraryFeatureTests: XCTestCase {
+    func testPlaylistsFavoritesAndManualMetadataSurviveStoreReopen() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("library.store")
+        let schema = Schema([Song.self, Playlist.self])
+        let firstID = UUID()
+        let secondID = UUID()
+        let chosenTitle = UUID().uuidString
+        do {
+            let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+            let context = container.mainContext
+            let first = Song(id: firstID, title: "Wrong", artist: "Wrong", album: "", duration: 30, fileName: "missing.mp3", originalFileName: "Other - Original.mp3")
+            let second = Song(id: secondID, title: "Second", artist: "Artist", album: "", duration: 40, fileName: "missing2.mp3")
+            context.insert(first)
+            context.insert(second)
+            try LibraryStore.update(first, title: "  \(chosenTitle)  ", artist: "  My artist  ", album: "", in: context)
+            try LibraryStore.toggleFavorite(first, in: context)
+            let playlist = try LibraryStore.createPlaylist(name: "  My playlist  ", songs: [first, second, first], in: context)
+            XCTAssertEqual(playlist.songIDs, [firstID, secondID])
+            playlist.songIDs = [secondID, firstID]
+            try LibraryStore.save(context)
+        }
+        let reopened = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+        let songs = try reopened.mainContext.fetch(FetchDescriptor<Song>())
+        let first = try XCTUnwrap(songs.first { $0.id == firstID })
+        let playlist = try XCTUnwrap(reopened.mainContext.fetch(FetchDescriptor<Playlist>()).first)
+        XCTAssertEqual(playlist.name, "My playlist")
+        XCTAssertEqual(playlist.songs(in: songs).map(\.id), [secondID, firstID])
+        XCTAssertTrue(first.isFavorite)
+        XCTAssertEqual(first.displayTitle, chosenTitle, "Manual UUID-looking titles must not be replaced by filename fallbacks.")
+        XCTAssertEqual(first.artist, "My artist")
+        await MusicImportService.repairLegacySongs(in: reopened.mainContext)
+        XCTAssertEqual(first.displayTitle, chosenTitle)
+        XCTAssertEqual(first.artist, "My artist")
+        MusicImportService.applyLegacyRepair(to: first, metadata: nil, originalFileName: "Wrong - Value.mp3")
+        XCTAssertEqual(first.title, chosenTitle)
+    }
+
+    func testVersion020LibraryMigratesToPlaylistsWithSongDataIntact() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("library.store")
+        let id = UUID()
+        do {
+            let schema = Schema([PreviousPlayerStore.Song.self])
+            let old = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+            old.mainContext.insert(PreviousPlayerStore.Song(id: id))
+            try old.mainContext.save()
+        }
+        let schema = Schema([Song.self, Playlist.self])
+        let updated = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+        let song = try XCTUnwrap(updated.mainContext.fetch(FetchDescriptor<Song>()).first)
+        XCTAssertEqual(song.id, id)
+        XCTAssertEqual(song.displayTitle, "Original title")
+        XCTAssertEqual(song.artist, "Original artist")
+        XCTAssertEqual(song.originalFileName, "Original artist - Original title.mp3")
+        XCTAssertEqual(song.artworkData, Data([1, 2, 3]))
+        XCTAssertFalse(song.isFavorite)
+        XCTAssertFalse(song.hasManualMetadata)
+        XCTAssertTrue(try updated.mainContext.fetch(FetchDescriptor<Playlist>()).isEmpty)
+        let playlist = try LibraryStore.createPlaylist(name: "After update", songs: [song], in: updated.mainContext)
+        XCTAssertEqual(playlist.songIDs, [id])
+    }
+    func testDeletingSongRemovesPlaylistReferencesWithoutDeletingPlaylist() throws {
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+        let first = Song(title: "First", artist: "", album: "", duration: 1, fileName: "\(UUID().uuidString).mp3")
+        let second = Song(title: "Second", artist: "", album: "", duration: 1, fileName: "\(UUID().uuidString).mp3")
+        context.insert(first)
+        context.insert(second)
+        let playlist = try LibraryStore.createPlaylist(name: "Keep", songs: [first, second], in: context)
+        let removedID = first.id
+        try MusicImportService.deleteSongs([first], from: context)
+        XCTAssertEqual(playlist.songIDs, [second.id])
+        XCTAssertFalse(playlist.songIDs.contains(removedID))
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Playlist>()).count, 1)
+        context.delete(playlist)
+        try LibraryStore.save(context)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Song>()).count, 1)
+    }
+
+    func testEmptyNamesAreRejectedBeforeChangingSavedSong() throws {
+        let container = try ModelContainer(for: Song.self, Playlist.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+        let song = Song(title: "Keep", artist: "Artist", album: "", duration: 1, fileName: "test.mp3")
+        context.insert(song)
+        try context.save()
+        XCTAssertThrowsError(try LibraryStore.update(song, title: " \n ", artist: "Other", album: "", in: context))
+        XCTAssertEqual(song.title, "Keep")
+        XCTAssertEqual(song.artist, "Artist")
+        XCTAssertFalse(song.hasManualMetadata)
+        XCTAssertThrowsError(try LibraryStore.createPlaylist(name: " \n ", in: context))
+        XCTAssertTrue(try context.fetch(FetchDescriptor<Playlist>()).isEmpty)
+    }
+
+    func testQueueNavigatesRepeatsAndRemovesDeletedSong() throws {
+        let folder = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("ImportedAudio")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let names = (0..<3).map { _ in "\(UUID().uuidString).wav" }
+        // Valid silent WAV: 8 kHz, mono, 16-bit PCM, one second.
+        var wav = Data()
+        func ascii(_ value: String) { wav.append(contentsOf: value.utf8) }
+        func u16(_ value: UInt16) {
+            var little = value.littleEndian
+            withUnsafeBytes(of: &little) { wav.append(contentsOf: $0) }
+        }
+        func u32(_ value: UInt32) {
+            var little = value.littleEndian
+            withUnsafeBytes(of: &little) { wav.append(contentsOf: $0) }
+        }
+        ascii("RIFF"); u32(16036); ascii("WAVEfmt "); u32(16)
+        u16(1); u16(1); u32(8000); u32(16000); u16(2); u16(16)
+        ascii("data"); u32(16000); wav.append(Data(count: 16000))
+        for name in names { try wav.write(to: folder.appendingPathComponent(name)) }
+        defer { for name in names { try? FileManager.default.removeItem(at: folder.appendingPathComponent(name)) } }
+        let songs = names.enumerated().map { Song(title: "Song \($0.offset)", artist: "", album: "", duration: 1, fileName: $0.element) }
+        let player = AudioPlayerService()
+        defer { player.stop() }
+        player.play(songs[0], in: songs)
+        XCTAssertEqual(player.currentSongID, songs[0].id)
+        player.next()
+        XCTAssertEqual(player.currentSongID, songs[1].id)
+        player.previous()
+        XCTAssertEqual(player.currentSongID, songs[0].id)
+        player.toggleShuffle()
+        XCTAssertTrue(player.isShuffling)
+        XCTAssertEqual(player.queue.first?.id, songs[0].id)
+        XCTAssertEqual(Set(player.queue.map(\.id)), Set(songs.map(\.id)))
+        player.toggleShuffle()
+        XCTAssertEqual(player.queue.map(\.id), songs.map(\.id))
+        player.repeatMode = .all
+        player.previous()
+        XCTAssertEqual(player.currentSongID, songs[2].id)
+        player.next()
+        XCTAssertEqual(player.currentSongID, songs[0].id)
+        player.repeatMode = .one
+        player.playbackDidEnd()
+        XCTAssertEqual(player.currentSongID, songs[0].id)
+        XCTAssertTrue(player.isPlaying)
+        player.repeatMode = .off
+        player.playbackDidEnd()
+        XCTAssertEqual(player.currentSongID, songs[1].id, "A finished song must advance automatically.")
+        player.play(songs[0], in: songs)
+        player.removeFromQueue(ids: [songs[1].id])
+        player.next()
+        XCTAssertEqual(player.currentSongID, songs[2].id)
+        player.repeatMode = .off
+        player.next()
+        XCTAssertFalse(player.isPlaying)
+        player.removeFromQueue(ids: [songs[2].id])
+        XCTAssertNil(player.currentSongID)
+    }
+}
+// Exact persistent schema shipped in Audyn 0.2.0 (3).
+private enum PreviousPlayerStore {
+    @Model
+    final class Song {
+        @Attribute(.unique) var id: UUID
+        var title: String
+        var artist: String
+        var album: String
+        var duration: TimeInterval
+        var fileName: String
+        var originalFileName: String? = nil
+        var metadataVersion: Int = 0
+        @Attribute(.externalStorage) var artworkData: Data?
+        var importedAt: Date
+
+        init(id: UUID) {
+            self.id = id
+            self.title = "Original title"
+            self.artist = "Original artist"
+            self.album = "Original album"
+            self.duration = 42
+            self.fileName = "\(id.uuidString).mp3"
+            self.originalFileName = "Original artist - Original title.mp3"
+            self.metadataVersion = 1
+            self.artworkData = Data([1, 2, 3])
             self.importedAt = .now
         }
     }

@@ -10,7 +10,9 @@ struct LocalMusicApp: App {
         WindowGroup {
             AppShellView()
                 .environment(player)
+                .preferredColorScheme(.dark)
+                .tint(.mint)
         }
-        .modelContainer(for: [Song.self])
+        .modelContainer(for: [Song.self, Playlist.self])
     }
 }

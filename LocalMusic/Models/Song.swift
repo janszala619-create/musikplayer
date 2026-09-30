@@ -12,12 +12,14 @@ final class Song {
     // Optional/defaulted additions permit SwiftData's lightweight store migration.
     var originalFileName: String? = nil
     var metadataVersion: Int = 0
+    var isFavorite: Bool = false
+    var hasManualMetadata: Bool = false
     @Attribute(.externalStorage) var artworkData: Data?
     var importedAt: Date
 
     // Protect the first rendered frame, before the asynchronous legacy repair finishes.
     var displayTitle: String {
-        MetadataFallback.resolve(title: title, originalFileName: originalFileName).title
+        hasManualMetadata ? title : MetadataFallback.resolve(title: title, originalFileName: originalFileName).title
     }
 
     init(

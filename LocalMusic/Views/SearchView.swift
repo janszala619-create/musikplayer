@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct SearchView: View {
     let songs: [Song]
     @State private var query = ""
@@ -15,7 +16,7 @@ struct SearchView: View {
 
     var body: some View {
         NavigationStack {
-            List(results) { song in PlaySongButton(song: song) }
+            List(results) { song in PlaySongButton(song: song, queue: results) }
                 .overlay {
                     if results.isEmpty {
                         ContentUnavailableView.search(text: query)
