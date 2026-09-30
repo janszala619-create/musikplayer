@@ -37,7 +37,7 @@ struct CoverQuery: Hashable, Sendable {
     var searchURL: URL {
         var components = URLComponents(string: "https://musicbrainz.org/ws/2/recording")!
         components.queryItems = [
-            URLQueryItem(name: "query", value: "recording:\"\(escaped(title))\" AND artist:\"\(escaped(artist))\""),
+            URLQueryItem(name: "query", value: "recording:\"\(escaped(title))\" AND artist:\"\(escaped(artist))\" AND status:official"),
             URLQueryItem(name: "fmt", value: "json"), URLQueryItem(name: "limit", value: "25")
         ]
         return components.url!
@@ -58,8 +58,9 @@ struct CoverSearchResponse: Decodable {
         let title: String
         let artistCredit: [Credit]
         let releases: [Release]?
+        let disambiguation: String?
         enum CodingKeys: String, CodingKey {
-            case title, releases
+            case title, releases, disambiguation
             case artistCredit = "artist-credit"
         }
     }
@@ -72,21 +73,44 @@ struct CoverSearchResponse: Decodable {
         let id: UUID
         let title: String
         let status: String?
+        let releaseGroup: ReleaseGroup?
+        enum CodingKeys: String, CodingKey {
+            case id, title, status
+            case releaseGroup = "release-group"
+        }
+    }
+    struct ReleaseGroup: Decodable {
+        let id: UUID
+        let secondaryTypes: [String]?
+        enum CodingKeys: String, CodingKey {
+            case id
+            case secondaryTypes = "secondary-types"
+        }
     }
 
     func candidates(for query: CoverQuery) -> [Release] {
         let title = CoverQuery.normalized(query.title)
         let artist = CoverQuery.normalized(query.artist)
+        let wantsLive = (CoverQuery.normalized(query.title) + " " + CoverQuery.normalized(query.album))
+            .split(separator: " ").contains("live")
         var seen = Set<UUID>()
         let matches = recordings.filter { recording in
             let credits = recording.artistCredit.map { CoverQuery.normalized($0.name ?? $0.artist.name) }
+            let names = recording.artistCredit.map { CoverQuery.normalized($0.artist.name) }
+            let liveComment = CoverQuery.normalized(recording.disambiguation ?? "").contains("live")
             return CoverQuery.normalized(recording.title) == title
-                && (credits.contains(artist) || credits.joined(separator: " ") == artist)
-        }.flatMap { $0.releases ?? [] }.filter { seen.insert($0.id).inserted }
+                && (!liveComment || wantsLive)
+                && (credits.contains(artist) || names.contains(artist) || credits.joined(separator: " ") == artist)
+        }.flatMap { $0.releases ?? [] }.filter { release in
+            let types = release.releaseGroup?.secondaryTypes ?? []
+            return (release.status == nil || release.status == "Official")
+                && (wantsLive || !types.contains("Live")) && seen.insert(release.id).inserted
+        }
         return matches.sorted { left, right in
             func priority(_ release: Release) -> Int {
                 let albumMatch = !query.album.isEmpty && CoverQuery.normalized(release.title) == CoverQuery.normalized(query.album)
-                return (albumMatch ? 2 : 0) + (release.status == "Official" ? 1 : 0)
+                let compilation = release.releaseGroup?.secondaryTypes?.contains("Compilation") == true
+                return (albumMatch ? 4 : 0) + (release.status == "Official" ? 2 : 0) + (compilation ? 0 : 1)
             }
             return priority(left) > priority(right)
         }
@@ -129,13 +153,21 @@ actor CoverCatalog: CoverLookingUp {
         let searchData = try await fetch(query.searchURL, limit: 2_000_000)
         guard let searchData else { return nil }
         let response = try JSONDecoder().decode(CoverSearchResponse.self, from: searchData)
+        var checkedGroups = Set<UUID>()
         for release in response.candidates(for: query).prefix(8) {
             try Task.checkCancellation()
             let url = URL(string: "https://coverartarchive.org/release/\(release.id.uuidString.lowercased())/front-500")!
-            guard let data = try await fetch(url, limit: 8_000_000) else { continue }
-            // Ignore broken image responses and continue with another matching release.
-            guard CGImageSourceCreateWithData(data as CFData, nil) != nil else { continue }
-            return CoverResult(data: data, releaseID: release.id, album: release.title)
+            if let data = try await fetch(url, limit: 8_000_000), CGImageSourceCreateWithData(data as CFData, nil) != nil {
+                return CoverResult(data: data, releaseID: release.id, album: release.title)
+            }
+            // Another edition of the same album can have its canonical cover even
+            // when this specific release has none. Request each group only once.
+            if let group = release.releaseGroup, checkedGroups.insert(group.id).inserted {
+                let groupURL = URL(string: "https://coverartarchive.org/release-group/\(group.id.uuidString.lowercased())/front-500")!
+                if let data = try await fetch(groupURL, limit: 8_000_000), CGImageSourceCreateWithData(data as CFData, nil) != nil {
+                    return CoverResult(data: data, releaseID: release.id, album: release.title)
+                }
+            }
         }
         return nil
     }

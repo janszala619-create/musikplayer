@@ -23,7 +23,7 @@ struct SongActions: View {
             Button("Zu Playlist hinzufügen", systemImage: "text.badge.plus") { sheet = .playlist }
             Button("Titel und Künstler bearbeiten", systemImage: "pencil") { sheet = .metadata }
             Divider()
-            Button("Cover suchen", systemImage: "photo.badge.magnifyingglass") { sheet = .coverSearch }
+            Button("Cover suchen", systemImage: "magnifyingglass") { sheet = .coverSearch }
             Button("Eigenes Bild auswählen", systemImage: "photo") { sheet = .coverPhoto }
         } label: {
             Image(systemName: "ellipsis").foregroundStyle(.secondary).frame(width: 44, height: 44)

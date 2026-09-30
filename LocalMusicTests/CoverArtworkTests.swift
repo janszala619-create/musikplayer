@@ -37,6 +37,15 @@ final class CoverArtworkTests: XCTestCase {
         XCTAssertTrue(search.contains("slash\\\\"))
     }
 
+    func testOfficialStudioReleaseIsPreferredToCompilationsAndLiveBootlegs() throws {
+        let query = try XCTUnwrap(CoverQuery(title: "Track", artist: "Artist", album: ""))
+        let fixture = Data(#"{"recordings":[{"title":"Track","disambiguation":"live at a concert","artist-credit":[{"artist":{"name":"Artist"}}],"releases":[{"id":"11111111-1111-1111-1111-111111111111","title":"Concert","status":"Official"}]},{"title":"Track","artist-credit":[{"artist":{"name":"Artist"}}],"releases":[{"id":"22222222-2222-2222-2222-222222222222","title":"Bootleg","status":"Bootleg"},{"id":"33333333-3333-3333-3333-333333333333","title":"Compilation","status":"Official","release-group":{"id":"99999999-9999-9999-9999-999999999999","secondary-types":["Compilation"]}},{"id":"44444444-4444-4444-4444-444444444444","title":"Studio Album","status":"Official"}]}]}"#.utf8)
+        let response = try JSONDecoder().decode(CoverSearchResponse.self, from: fixture)
+        XCTAssertEqual(response.candidates(for: query).map(\.title), ["Studio Album", "Compilation"])
+        let term = URLComponents(url: query.searchURL, resolvingAgainstBaseURL: false)?.queryItems?.first?.value
+        XCTAssertTrue(term?.contains("status:official") == true)
+    }
+
     func testMissingCoversAreFilledAndExistingPhotosArePreserved() async throws {
         let store = try container()
         let context = store.mainContext
@@ -158,6 +167,27 @@ final class CoverArtworkTests: XCTestCase {
         let query = try XCTUnwrap(CoverQuery(title: "Track", artist: "Artist", album: ""))
         let found = try await catalog.lookup(query)
         XCTAssertEqual(found?.album, "Second")
+        XCTAssertEqual(found?.data, png)
+    }
+
+    func testCatalogFallsBackToCanonicalAlbumCover() async throws {
+        let png = try image()
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CoverURLProtocol.self]
+        CoverURLProtocol.handler = { request in
+            if request.url?.host == "musicbrainz.org" {
+                return (200, Data(#"{"recordings":[{"title":"Track","artist-credit":[{"artist":{"name":"Artist"}}],"releases":[{"id":"11111111-1111-1111-1111-111111111111","title":"Album","status":"Official","release-group":{"id":"22222222-2222-2222-2222-222222222222"}}]}]}"#.utf8))
+            }
+            if request.url?.path.hasPrefix("/release-group/") == true { return (200, png) }
+            return (404, Data())
+        }
+        defer { CoverURLProtocol.handler = nil }
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let catalog = CoverCatalog(session: session, requestInterval: 0)
+        let query = try XCTUnwrap(CoverQuery(title: "Track", artist: "Artist", album: ""))
+        let found = try await catalog.lookup(query)
+        XCTAssertEqual(found?.album, "Album")
         XCTAssertEqual(found?.data, png)
     }
 }
