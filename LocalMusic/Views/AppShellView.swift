@@ -4,6 +4,7 @@ import SwiftData
 @MainActor
 struct AppShellView: View {
     @Environment(AudioPlayerService.self) private var player
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Song.importedAt, order: .reverse) private var songs: [Song]
     @State private var playerSheetSong: Song?
 
@@ -28,6 +29,9 @@ struct AppShellView: View {
         }
         .sheet(item: $playerSheetSong) { song in
             FullPlayerView(song: song)
+        }
+        .task {
+            await MusicImportService.repairLegacySongs(in: modelContext)
         }
         .alert("Wiedergabe nicht möglich", isPresented: Binding(
             get: { player.errorMessage != nil },

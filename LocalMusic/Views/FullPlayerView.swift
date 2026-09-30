@@ -14,10 +14,10 @@ struct FullPlayerView: View {
                 Spacer(minLength: 4)
 
                 ArtworkView(data: song.artworkData, size: 280)
-                    .accessibilityLabel("Cover von \(song.title)")
+                    .accessibilityLabel("Cover von \(song.displayTitle)")
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(song.title)
+                    Text(song.displayTitle)
                         .font(.title2.weight(.bold))
                         .lineLimit(2)
                     Text(song.artist)

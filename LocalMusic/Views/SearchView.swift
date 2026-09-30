@@ -7,7 +7,7 @@ struct SearchView: View {
     private var results: [Song] {
         guard !query.isEmpty else { return songs }
         return songs.filter {
-            $0.title.localizedCaseInsensitiveContains(query)
+            $0.displayTitle.localizedCaseInsensitiveContains(query)
                 || $0.artist.localizedCaseInsensitiveContains(query)
                 || $0.album.localizedCaseInsensitiveContains(query)
         }

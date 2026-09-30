@@ -26,6 +26,6 @@ struct PlaySongButton: View {
     var body: some View {
         Button { player.play(song) } label: { SongRow(song: song) }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(song.title) wiedergeben")
+            .accessibilityLabel("\(song.displayTitle) wiedergeben")
     }
 }

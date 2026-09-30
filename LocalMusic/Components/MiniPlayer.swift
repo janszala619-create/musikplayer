@@ -12,13 +12,13 @@ struct MiniPlayer: View {
                     HStack(spacing: 12) {
                         ArtworkView(data: song.artworkData, size: 42)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(song.title).lineLimit(1)
+                            Text(song.displayTitle).lineLimit(1)
                             Text(song.artist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Player für \(song.title) öffnen")
+                .accessibilityLabel("Player für \(song.displayTitle) öffnen")
                 Spacer()
                 Button(action: player.togglePlayPause) {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
