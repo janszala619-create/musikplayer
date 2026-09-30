@@ -98,21 +98,22 @@ final class CoverArtworkTests: XCTestCase {
         context.insert(song)
         try context.save()
         let query = try XCTUnwrap(CoverArtworkService.query(for: song))
+        let songID = song.id
         let data = try image()
         let result = CoverResult(data: data, releaseID: UUID(), album: "Album")
         let service = CoverArtworkService(catalog: CoverStub(result: result), defaults: defaults())
         try service.savePhoto(data, to: song, in: context)
         let selected = song.artworkData
-        XCTAssertFalse(try service.apply(result, to: song, expectedQuery: query, replaceExisting: false, in: context))
+        XCTAssertFalse(try service.apply(result, toSongID: songID, expectedQuery: query, replaceExisting: false, in: context))
         XCTAssertEqual(song.artworkData, selected)
         XCTAssertNil(song.artworkSourceURL)
         song.title = "Changed title"
         try context.save()
-        XCTAssertFalse(try service.apply(result, to: song, expectedQuery: query, replaceExisting: true, in: context))
+        XCTAssertFalse(try service.apply(result, toSongID: songID, expectedQuery: query, replaceExisting: true, in: context))
         let changedQuery = try XCTUnwrap(CoverArtworkService.query(for: song))
         context.delete(song)
         try context.save()
-        XCTAssertFalse(try service.apply(result, to: song, expectedQuery: changedQuery, replaceExisting: true, in: context))
+        XCTAssertFalse(try service.apply(result, toSongID: songID, expectedQuery: changedQuery, replaceExisting: true, in: context))
     }
 
     func testChosenCoverSurvivesStoreReopen() throws {
@@ -128,7 +129,7 @@ final class CoverArtworkTests: XCTestCase {
             store.mainContext.insert(song)
             try store.mainContext.save()
             let service = CoverArtworkService(catalog: CoverStub(result: result), defaults: defaults())
-            XCTAssertTrue(try service.apply(result, to: song, expectedQuery: XCTUnwrap(CoverArtworkService.query(for: song)), replaceExisting: true, in: store.mainContext))
+            XCTAssertTrue(try service.apply(result, toSongID: song.id, expectedQuery: XCTUnwrap(CoverArtworkService.query(for: song)), replaceExisting: true, in: store.mainContext))
         }
         let reopened = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
         let song = try XCTUnwrap(reopened.mainContext.fetch(FetchDescriptor<Song>()).first)

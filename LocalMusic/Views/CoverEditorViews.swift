@@ -69,7 +69,7 @@ struct CoverSearchView: View {
     private func save(_ result: CoverResult) {
         guard let query else { return }
         do {
-            if try artwork.apply(result, to: song, expectedQuery: query, replaceExisting: true, in: context) {
+            if try artwork.apply(result, toSongID: song.id, expectedQuery: query, replaceExisting: true, in: context) {
                 dismiss()
             } else { message = "Die Songdaten haben sich geändert. Suche das Cover bitte erneut." }
         } catch { message = error.localizedDescription }

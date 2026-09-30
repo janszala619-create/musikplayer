@@ -230,35 +230,35 @@ final class CoverArtworkService {
         for song in songs {
             if Task.isCancelled { return }
             guard song.artworkData == nil, let query = Self.query(for: song), !searchingIDs.contains(song.id) else { continue }
+            let songID = song.id
             let retryKey = "cover.retry." + query.key
             if let retry = defaults.object(forKey: retryKey) as? Date, retry > .now { continue }
-            searchingIDs.insert(song.id)
+            searchingIDs.insert(songID)
             do {
                 let result = try await catalog.lookup(query)
                 try Task.checkCancellation()
-                if let result, try apply(result, to: song, expectedQuery: query, replaceExisting: false, in: context) {
+                if let result, try apply(result, toSongID: songID, expectedQuery: query, replaceExisting: false, in: context) {
                     defaults.removeObject(forKey: retryKey)
                 } else {
                     defaults.set(Date.now.addingTimeInterval(7 * 24 * 3600), forKey: retryKey)
                 }
             } catch is CancellationError {
-                searchingIDs.remove(song.id)
+                searchingIDs.remove(songID)
                 return
             } catch {
                 // Network failures never interrupt audio importing or playback.
-                if Task.isCancelled { searchingIDs.remove(song.id); return }
+                if Task.isCancelled { searchingIDs.remove(songID); return }
                 defaults.set(Date.now.addingTimeInterval(3600), forKey: retryKey)
             }
-            searchingIDs.remove(song.id)
+            searchingIDs.remove(songID)
         }
     }
 
     @discardableResult
-    func apply(_ result: CoverResult, to song: Song, expectedQuery: CoverQuery, replaceExisting: Bool, in context: ModelContext) throws -> Bool {
+    func apply(_ result: CoverResult, toSongID id: UUID, expectedQuery: CoverQuery, replaceExisting: Bool, in context: ModelContext) throws -> Bool {
         // A download may finish after a metadata edit, photo selection or song deletion.
-        let id = song.id
         let descriptor = FetchDescriptor<Song>(predicate: #Predicate { $0.id == id })
-        guard try context.fetch(descriptor).contains(where: { $0.id == id }),
+        guard let song = try context.fetch(descriptor).first,
               Self.query(for: song) == expectedQuery,
               replaceExisting || song.artworkData == nil else { return false }
         let jpeg = try CoverImage.prepared(result.data)
