@@ -181,11 +181,11 @@ final class LocalMusicTests: XCTestCase {
         try await export(from: wav, to: untaggedM4A, preset: AVAssetExportPresetAppleM4A, type: .m4a, metadata: [])
         try await export(from: untaggedM4A, to: mp4, preset: AVAssetExportPresetPassthrough, type: .mp4, metadata: [])
         let taggedMP4 = directory.appendingPathComponent("Kobosil - Worse Filename.mp4")
-        try await export(from: m4a, to: taggedMP4, preset: AVAssetExportPresetPassthrough, type: .mp4, metadata: [
-            tag(.iTunesMetadataSongName, "Embedded Title" as NSString),
-            tag(.iTunesMetadataAlbum, "Embedded Album" as NSString),
-            tag(.iTunesMetadataCoverArt, cover as NSData)
-        ])
+        // Self-generated AAC MP4 with real title/album/covr atoms (FFmpeg).
+        // AVAssetExportSession doesn't reliably write iTunes album/cover tags to MP4.
+        let taggedMP4Data = try XCTUnwrap(Data(base64Encoded: "AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAzW1kYXTeAgBMYXZjNjEuMTkuMTAwAAIwQA4BGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwAABIRtb292AAAAbG12aGQAAAAAAAAAAAAAAAAAAAPoAAAD6AABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAC7XRyYWsAAABcdGtoZAAAAAMAAAAAAAAAAAAAAAEAAAAAAAAD6AAAAAAAAAAAAAAAAQEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAA+gAAAQAAAEAAAAAAmVtZGlhAAAAIG1kaGQAAAAAAAAAAAAAAAAAAKxEAACwRFXEAAAAAAAtaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAAIQbWluZgAAABBzbWhkAAAAAAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAHUc3RibAAAAH5zdHNkAAAAAAAAAAEAAABubXA0YQAAAAAAAAABAAAAAAAAAAAAAQAQAAAAAKxEAAAAAAA2ZXNkcwAAAAADgICAJQABAASAgIAXQBUAAAAAAH0AAAAGBAWAgIAFEghW5QAGgICAAQIAAAAUYnRydAAAAAAAAH0AAAAGBAAAACBzdHRzAAAAAAAAAAIAAAAsAAAEAAAAAAEAAABEAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAAtAAAAAQAAAMhzdHN6AAAAAAAAAAAAAAAtAAAAFQAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAAFHN0Y28AAAAAAAAAAQAAACwAAAAac2dwZAEAAAByb2xsAAAAAgAAAAH//wAAABxzYmdwAAAAAHJvbGwAAAABAAAALQAAAAEAAAEjdWR0YQAAARttZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAO5pbHN0AAAAJqluYW0AAAAeZGF0YQAAAAEAAAAARW1iZWRkZWQgVGl0bGUAAAAmqWFsYgAAAB5kYXRhAAAAAQAAAABFbWJlZGRlZCBBbGJ1bQAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2MS43LjEwMAAAAHZjb3ZyAAAAbmRhdGEAAAAOAAAAAIlQTkcNChoKAAAADUlIRFIAAAACAAAAAggCAAAA/dSacwAAAAlwSFlzAAAAAQAAAAEATyXE1gAAABBJREFUeJxj+MvAAEQMEAoAH64D9fYYKlkAAAAASUVORK5CYII="))
+        let taggedMP4Cover = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAABAAAAAQBPJcTWAAAAEElEQVR4nGP4y8AARAwQCgAfrgP19hgqWQAAAABJRU5ErkJggg=="))
+        try taggedMP4Data.write(to: taggedMP4)
         let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         for source in [m4a, mp4, taggedMP4] {
             try await MusicImportService.importFile(from: source, into: container.mainContext)
@@ -207,7 +207,7 @@ final class LocalMusicTests: XCTestCase {
         XCTAssertEqual(importedTaggedMP4.title, "Embedded Title")
         XCTAssertEqual(importedTaggedMP4.artist, "Kobosil")
         XCTAssertEqual(importedTaggedMP4.album, "Embedded Album")
-        XCTAssertEqual(importedTaggedMP4.artworkData, cover)
+        XCTAssertEqual(importedTaggedMP4.artworkData, taggedMP4Cover)
         for song in songs {
             XCTAssertTrue(MetadataFallback.isUUIDLike(song.fileName))
             XCTAssertFalse(MetadataFallback.isUUIDLike(song.title))
