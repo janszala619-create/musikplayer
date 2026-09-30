@@ -63,8 +63,8 @@ final class LocalMusicTests: XCTestCase {
     func testInstalledAppHasBackgroundAudioCapabilityAndIdentifiableVersion() {
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         XCTAssertTrue(modes?.contains("audio") == true, "The built app, not just its project settings, must declare background audio.")
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.3.0")
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "4")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.3.1")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "5")
     }
 
     @MainActor
@@ -124,7 +124,7 @@ final class LocalMusicTests: XCTestCase {
         let originalWindow = scene.windows.first(where: \.isKeyWindow)
         let window = UIWindow(windowScene: scene)
         window.frame = scene.coordinateSpace.bounds
-        let host = UIHostingController(rootView: AppShellView().environment(player).modelContainer(container))
+        let host = UIHostingController(rootView: AppShellView(artwork: CoverArtworkService(allowsAutomaticLookup: false)).environment(player).modelContainer(container))
         window.rootViewController = host
         window.makeKeyAndVisible()
         defer {

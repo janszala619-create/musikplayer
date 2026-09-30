@@ -17,3 +17,6 @@ Package.resolved
 # Signing material must never be committed
 *.mobileprovision
 *.p12
+
+# Downloaded GitHub build artifacts
+build-artifacts/

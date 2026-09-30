@@ -24,6 +24,7 @@ struct LibraryView: View {
     @State private var busy = false
     @State private var error: String?
     @State private var deletingPlaylist: Playlist?
+    @AppStorage("automaticCoverSearch") private var automaticCoverSearch = true
 
     private var filteredSongs: [Song] { songs.filter { matches($0.displayTitle) || matches($0.artist) } }
     private var filteredPlaylists: [Playlist] { playlists.filter { matches($0.name) } }
@@ -103,6 +104,12 @@ struct LibraryView: View {
             .navigationTitle("Bibliothek")
             .searchable(text: $query, prompt: filter == .playlists ? "Playlists suchen" : "Titel oder Künstler suchen")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Toggle("Cover automatisch suchen", isOn: $automaticCoverSearch)
+                    } label: { Image(systemName: "gearshape") }
+                    .accessibilityLabel("Bibliothek-Einstellungen")
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     Text(appVersion).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("app.version")
                 }

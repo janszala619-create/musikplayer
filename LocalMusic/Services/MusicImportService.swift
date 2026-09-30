@@ -149,7 +149,7 @@ enum MusicImportService {
         song.album = text.album
         song.originalFileName = originalFileName
         if let metadata, metadata.duration > 0 { song.duration = metadata.duration }
-        if let artwork = metadata?.artworkData { song.artworkData = artwork }
+        if song.artworkData == nil, let artwork = metadata?.artworkData { song.artworkData = artwork }
         song.metadataVersion = currentMetadataVersion
     }
 

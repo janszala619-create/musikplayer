@@ -158,3 +158,33 @@ Auf dem Windows-Arbeitsplatz steht Xcode nicht zur Verfügung. Ein erfolgreicher
 Simulator-Screenshots und das fertige IPA sind erst durch den macOS-Workflow bestätigbar.
 Apple-Referenzen: [SwiftData-Persistenz](https://developer.apple.com/documentation/swiftdata/preserving-your-apps-model-data-across-launches)
 und [Listen-Reihenfolge](https://developer.apple.com/documentation/swiftui/dynamicviewcontent/onmove(perform:)).
+
+## Audyn 0.3.1 (5): Cover automatisch ergänzen
+
+Songs ohne eingebettetes Cover werden nach dem Import und beim Öffnen der App im Hintergrund
+anhand von Titel und Künstler in MusicBrainz gesucht. Ein passendes Frontcover aus dem Cover Art
+Archive wird lokal gespeichert und funktioniert danach offline. Bereits vorhandene Cover bleiben
+erhalten. Titel und Künstler müssen übereinstimmen; Live-/Remix-Zusätze werden beim Abgleich
+beibehalten. Albumangaben helfen, die passende Veröffentlichung zu bevorzugen. Es gibt keine
+Garantie auf einen Treffer für jeden Song.
+
+- Song-Menü → **Cover suchen**: Treffer ansehen und bewusst übernehmen; die manuelle Suche
+  funktioniert auch bei Songs, die schon ein Cover haben.
+- Song-Menü → **Eigenes Bild auswählen**: Bild aus Fotos oder Dateien auswählen und speichern.
+  Bilder werden mit korrekter Orientierung auf maximal 800 Pixel verkleinert.
+- Bibliothek → Zahnrad → **Cover automatisch suchen**: automatische Online-Suche ein-/ausschalten.
+- Der große Player zeigt bei Online-Covern einen Link zur Quelle.
+
+Die Suche sendet Titel und Künstler an MusicBrainz, keine Audiodateien. Für die Bildsuche ist
+Internet erforderlich; Ausfälle ändern weder Musikdateien noch vorhandene Cover. Nicht gefundene
+Cover werden automatisch frühestens nach sieben Tagen erneut gesucht, Netzfehler nach einer
+Stunde. Die manuelle Suche ist jederzeit möglich. Nach Titel-/Künstlerkorrekturen wird mit den
+neuen Angaben gesucht. Suchanfragen an MusicBrainz werden auf höchstens eine pro 1,1 Sekunden
+begrenzt. Ein verspäteter Download kann kein zwischenzeitlich gewähltes Foto überschreiben.
+
+Die Tests verwenden kontrollierte Antworten ohne Internet und prüfen Trefferabgleich, fehlende
+Veröffentlichungscover, Ausfälle, Bildvalidierung, Speicherung über Neustarts und verspätete
+Downloads nach Songänderungen oder Löschung. Build und Tests laufen im GitHub-IPA-Builder.
+
+Quellen: [MusicBrainz-Suche](https://musicbrainz.org/doc/MusicBrainz_API/Search),
+[Cover Art Archive API](https://musicbrainz.org/doc/Cover_Art_Archive/API).

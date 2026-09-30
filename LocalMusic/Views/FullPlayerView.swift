@@ -98,6 +98,10 @@ struct FullPlayerView: View {
                             Spacer()
                             SongActions(song: currentSong)
                         }
+                        if let source = currentSong.artworkSourceURL, let url = URL(string: source) {
+                            Link("Coverquelle: MusicBrainz / Cover Art Archive", destination: url)
+                                .font(.caption)
+                        }
                         if player.queue.count > 1 {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Warteschlange").font(.headline)

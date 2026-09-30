@@ -14,6 +14,7 @@ final class Song {
     var metadataVersion: Int = 0
     var isFavorite: Bool = false
     var hasManualMetadata: Bool = false
+    var artworkSourceURL: String? = nil
     @Attribute(.externalStorage) var artworkData: Data?
     var importedAt: Date
 

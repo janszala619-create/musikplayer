@@ -7,6 +7,18 @@ struct AppShellView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Song.importedAt, order: .reverse) private var songs: [Song]
     @State private var playerSheetSong: Song?
+    @State private var artwork: CoverArtworkService
+    @AppStorage("automaticCoverSearch") private var automaticCoverSearch = true
+
+    init(artwork: CoverArtworkService? = nil) {
+        _artwork = State(initialValue: artwork ?? CoverArtworkService())
+    }
+
+    private var artworkLibrarySignature: String {
+        String(automaticCoverSearch) + songs.map {
+            "\($0.id):\($0.displayTitle):\($0.artist):\($0.album)"
+        }.joined(separator: "|")
+    }
 
     private var currentSong: Song? {
         songs.first { $0.id == player.currentSongID }
@@ -27,8 +39,10 @@ struct AppShellView: View {
         .sheet(item: $playerSheetSong) { song in
             FullPlayerView(song: song)
         }
-        .task {
+        .environment(artwork)
+        .task(id: artworkLibrarySignature) {
             await MusicImportService.repairLegacySongs(in: modelContext)
+            if automaticCoverSearch { await artwork.fillMissing(in: modelContext) }
         }
         .alert("Wiedergabe nicht möglich", isPresented: Binding(
             get: { player.errorMessage != nil },

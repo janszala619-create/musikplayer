@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 private enum SongSheet: String, Identifiable {
-    case metadata, playlist
+    case metadata, playlist, coverSearch, coverPhoto
     var id: String { rawValue }
 }
 
@@ -22,6 +22,9 @@ struct SongActions: View {
             }
             Button("Zu Playlist hinzufügen", systemImage: "text.badge.plus") { sheet = .playlist }
             Button("Titel und Künstler bearbeiten", systemImage: "pencil") { sheet = .metadata }
+            Divider()
+            Button("Cover suchen", systemImage: "photo.badge.magnifyingglass") { sheet = .coverSearch }
+            Button("Eigenes Bild auswählen", systemImage: "photo") { sheet = .coverPhoto }
         } label: {
             Image(systemName: "ellipsis").foregroundStyle(.secondary).frame(width: 44, height: 44)
         }
@@ -30,6 +33,8 @@ struct SongActions: View {
             switch destination {
             case .metadata: SongMetadataEditor(song: song)
             case .playlist: AddToPlaylistView(song: song)
+            case .coverSearch: CoverSearchView(song: song)
+            case .coverPhoto: CoverPhotoView(song: song)
             }
         }
         .alert("Speichern fehlgeschlagen", isPresented: Binding(
