@@ -103,7 +103,7 @@ enum MetadataService {
     static func readText(from items: [AVMetadataItem], originalFileName: String?) async -> ResolvedSongText {
         let title = await firstUsableString(in: items, key: .commonKeyTitle, identifiers: [
             .id3MetadataTitleDescription, .iTunesMetadataSongName,
-            .quickTimeMetadataTitle, .quickTimeUserDataTitle
+            .quickTimeMetadataTitle, .quickTimeUserDataFullName
         ])
         let artist = await firstUsableString(in: items, key: .commonKeyArtist, identifiers: [
             .id3MetadataLeadPerformer, .iTunesMetadataArtist,
