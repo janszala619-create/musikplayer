@@ -6,6 +6,18 @@ import SwiftUI
 @testable import LocalMusic
 
 final class LocalMusicTests: XCTestCase {
+    func testAudynDisplayNameAndAppIconArePresentInBuiltApp() throws {
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String, "Audyn")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String, "Audyn")
+        XCTAssertEqual(Bundle.main.bundleIdentifier, "com.localmusic.app", "Preserve the existing app identity and library when updating.")
+        for key in ["CFBundleIcons", "CFBundleIcons~ipad"] {
+            let icons = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: key) as? [String: Any])
+            let primary = try XCTUnwrap(icons["CFBundlePrimaryIcon"] as? [String: Any])
+            XCTAssertEqual(primary["CFBundleIconName"] as? String, "AppIcon")
+            XCTAssertFalse((primary["CFBundleIconFiles"] as? [String] ?? []).isEmpty)
+        }
+    }
+
     @MainActor
     func testDeletionRejectsPathsOutsideThePrivateAudioFolder() throws {
         let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
@@ -48,7 +60,7 @@ final class LocalMusicTests: XCTestCase {
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         XCTAssertTrue(modes?.contains("audio") == true, "The built app, not just its project settings, must declare background audio.")
         XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.2.0")
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "2")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "3")
     }
 
     @MainActor

@@ -77,25 +77,37 @@ jobs:
         run: |
           mkdir -p ipa/Payload
           cp -R build/Build/Products/Release-iphoneos/LocalMusic.app ipa/Payload/
-          ditto -c -k --sequesterRsrc --keepParent ipa/Payload LocalMusic-unsigned.ipa
+          ditto -c -k --sequesterRsrc --keepParent ipa/Payload Audyn-unsigned.ipa
 
-      - name: Verify packaged background audio and version
+      - name: Verify packaged name, app icon, background audio and version
         run: |
           python3 - <<'PY'
           import plistlib, zipfile
-          with zipfile.ZipFile("LocalMusic-unsigned.ipa") as ipa:
+          with zipfile.ZipFile("Audyn-unsigned.ipa") as ipa:
               info = plistlib.loads(ipa.read("Payload/LocalMusic.app/Info.plist"))
+              files = ipa.namelist()
           modes = info.get("UIBackgroundModes")
           assert isinstance(modes, list) and "audio" in modes, f"Missing background audio: {modes!r}"
           assert info["CFBundleShortVersionString"] == "0.2.0", info
-          assert info["CFBundleVersion"] == "2", info
-          print("Verified IPA: LocalMusic 0.2.0 (2), UIBackgroundModes =", modes)
+          assert info["CFBundleVersion"] == "3", info
+          assert info["CFBundleDisplayName"] == "Audyn", info
+          assert info["CFBundleName"] == "Audyn", info
+          assert info["CFBundleIdentifier"] == "com.localmusic.app", info
+          for key in ("CFBundleIcons", "CFBundleIcons~ipad"):
+              primary = info[key]["CFBundlePrimaryIcon"]
+              assert primary["CFBundleIconName"] == "AppIcon", primary
+              icons = primary.get("CFBundleIconFiles", [])
+              assert icons, primary
+              for icon in icons:
+                  assert any(name.startswith("Payload/LocalMusic.app/" + icon) and name.endswith(".png") for name in files), icon
+          assert "Payload/LocalMusic.app/Assets.car" in files, "Missing compiled asset catalog"
+          print("Verified IPA: Audyn 0.2.0 (3), iPhone/iPad app icons, UIBackgroundModes =", modes)
           PY
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: LocalMusic-unsigned-ipa
-          path: LocalMusic-unsigned.ipa
+          name: Audyn-unsigned-ipa
+          path: Audyn-unsigned.ipa
           if-no-files-found: error
           retention-days: 14

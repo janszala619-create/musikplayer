@@ -1,4 +1,4 @@
-# LocalMusic
+# Audyn
 
 Eine lokale iOS-Musikbibliothek für eigene Dateien. V1 nutzt SwiftUI, SwiftData und AVFoundation und benötigt weder Account noch Cloud noch Backend.
 
@@ -25,7 +25,7 @@ Eine lokale iOS-Musikbibliothek für eigene Dateien. V1 nutzt SwiftUI, SwiftData
 
 2. Öffne auf GitHub den Reiter **Actions** und wähle **Build unsigned IPA**. Der Workflow startet bei jedem Push nach `main`, der eine App-, Projekt- oder Workflow-Datei ändert, und kann auch mit **Run workflow** manuell gestartet werden.
 3. Der Job baut zuerst für den iOS-Simulator, führt die Unit-Tests aus und erstellt anschließend eine nicht signierte Device-App.
-4. Lade nach einem erfolgreichen Lauf unter **Artifacts** `LocalMusic-unsigned-ipa` herunter. Darin liegt `LocalMusic-unsigned.ipa` für deinen bisherigen Sideloading-/Signier-Schritt.
+4. Lade nach einem erfolgreichen Lauf unter **Artifacts** `Audyn-unsigned-ipa` herunter. Darin liegt `Audyn-unsigned.ipa` für deinen bisherigen Sideloading-/Signier-Schritt.
 
 Die IPA ist bewusst **nicht** direkt installierbar: Ohne Apple-Zertifikat und Provisioning Profile kann GitHub keine auf einem iPhone gültig signierte App erzeugen. Für eine später direkt installierbare IPA können ein Zertifikat und ein Provisioning Profile als GitHub Secrets ergänzt werden.
 
@@ -77,7 +77,7 @@ auf Brauchbarkeit und ließ Tag-Fehler den Import abbrechen.
 
 Die Unit-Tests prüfen Parsing, Feldpriorität, UUIDs, Whitespace, alternative Tag-Kandidaten,
 Artwork und die Reparatur. Der bestehende Actions-Workflow baut/testet den Simulator und
-erzeugt danach `LocalMusic-unsigned.ipa` im Artifact `LocalMusic-unsigned-ipa`.
+erzeugt danach `Audyn-unsigned.ipa` im Artifact `Audyn-unsigned-ipa`.
 Die asynchronen AVFoundation-Aufrufe folgen der [Apple-Dokumentation zur Metadatenextraktion](https://developer.apple.com/documentation/avfoundation/retrieving-media-metadata).
 
 ## Korrekturen in 0.2.0 (2)
@@ -109,5 +109,11 @@ Nach Installation bitte auf dem echten iPhone prüfen:
 Simulator-/Build-Prüfungen ersetzen keinen physischen iPhone-Test von Hintergrund-Audio.
 
 ## Phase 2
+
+Seit Build `0.2.0 (3)` heißt die App **Audyn** und verwendet das bereitgestellte grün-türkise
+Musiknoten-Icon. Das Motiv wird nur auf 1024 × 1024 Pixel skaliert; Xcode erzeugt daraus
+die iPhone-/iPad-Größen. App-Kennung `com.localmusic.app`, SwiftData-Bibliothek,
+interne Projektnamen und Player-Verhalten bleiben erhalten. Die Paketprüfung prüft auch
+beide App-Namensfelder sowie die tatsächlich enthaltenen iPhone-/iPad-Icons.
 
 Als Nächstes bieten sich Lockscreen-Steuerung, Queue, Shuffle/Repeat, Playlists und Bearbeiten der Bibliothek an.
