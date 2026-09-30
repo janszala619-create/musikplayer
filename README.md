@@ -36,12 +36,14 @@ Das Xcode-Projekt ist vollständig eingecheckt. Windows kann es bequem bearbeite
 ## Metadaten und Reparatur alter Imports
 
 Der Import sichert `originalFileName` direkt von der ausgewählten Quelle vor dem Kopieren.
+Ist die Quell-URL selbst UUID-basiert, werden auch der Ressourcenname und lokalisierte Name
+des Dateianbieters geprüft, solange der Security-Scope offen ist.
 Nur die private Speicherdatei und Song-ID bleiben UUID-basiert. Der externe URL-Zugriff wird
 mit `startAccessingSecurityScopedResource()`/`defer` begrenzt; für Wiedergabe wird ausschließlich
 die persistente Kopie verwendet.
 
 Jedes Feld wird unabhängig aufgelöst: brauchbare eingebettete Common-/ID3-/iTunes-/QuickTime-Tags
-haben Vorrang. Leere, reine Whitespace- und UUID-Werte werden verworfen, weitere Tag-Kandidaten
+haben Vorrang. Leere, reine Whitespace-, UUID- und eigene Platzhalter-Werte werden verworfen, weitere Tag-Kandidaten
 werden ausprobiert. Titel/Künstler fallen auf den **Originalnamen** ohne Extension zurück:
 `Kobosil - You Need The Drug.mp4` → Künstler `Kobosil`, Titel `You Need The Drug`.
 Getrennt wird nur an der ersten sinnvollen exakten Folge ` - `; sonst bleibt der gesamte
@@ -56,6 +58,7 @@ und Vollbild-Player verwenden weiterhin dasselbe `ArtworkView` und denselben Pla
 Es werden keine Cover aus dem Internet geladen oder aus Videoframes erfunden.
 
 Beim ersten Start nach diesem Update werden Altimporte einmalig (`metadataVersion`) geprüft.
+Offensichtlich ungültige UUID-Titel werden auch bei bereits gesetzter Metadatenversion geprüft.
 Die optionalen/defaultbelegten Modellfelder nutzen SwiftDatas automatische leichte Migration.
 Gute vorhandene Titel/Künstler/Alben bleiben erhalten; fehlende Werte und Cover werden aus
 der gespeicherten Datei oder einem zuverlässig erhaltenen Originalnamen ergänzt.
@@ -63,8 +66,9 @@ Alte UUID-Speichernamen werden **nicht** als Originalnamen interpretiert. Fehlen
 Originalname als auch brauchbare Titel-Tags, ist der Originaltitel nicht rekonstruierbar:
 der Eintrag zeigt `Unbekannter Titel`, behält Audiodatei, ID und Dauer und wird protokolliert.
 Diese betroffenen alten Titel müssen gelöscht und aus der ursprünglichen Datei neu importiert
-werden. V1 hat noch keine Löschfunktion; bis diese vorhanden ist, kann die Originaldatei neu
-importiert werden, der alte Platzhalter-Eintrag bleibt bestehen. Eine Neuinstallation würde
+werden. In der Bibliothek kann der betreffende Eintrag jetzt nach links gewischt und gelöscht
+werden. Erst nach erfolgreich gespeicherter Bibliotheksänderung wird die private Audiodatei
+entfernt; die Originaldatei wird nicht gelöscht. Eine Neuinstallation würde
 die gesamte lokale Bibliothek löschen und ist für diesen Fix nicht erforderlich.
 
 Der ursprüngliche Fehler entstand durch den Titel-Fallback auf den bereits UUID-umbenannten
@@ -76,6 +80,34 @@ Artwork und die Reparatur. Der bestehende Actions-Workflow baut/testet den Simul
 erzeugt danach `LocalMusic-unsigned.ipa` im Artifact `LocalMusic-unsigned-ipa`.
 Die asynchronen AVFoundation-Aufrufe folgen der [Apple-Dokumentation zur Metadatenextraktion](https://developer.apple.com/documentation/avfoundation/retrieving-media-metadata).
 
+## Korrekturen in 0.2.0 (2)
+
+Im tatsächlich erzeugten vorherigen IPA fehlte `UIBackgroundModes`, obwohl das Projekt
+`INFOPLIST_KEY_UIBackgroundModes = audio` enthielt. Eine explizite `Info.plist` liefert nun
+das benötigte Array `[audio]`. Tests lesen die gebaute App-Konfiguration; der Workflow prüft
+zusätzlich genau diese Eigenschaft im fertigen IPA, bevor es hochgeladen wird.
+Die Audio-Session bleibt `.playback`; bei Wiederaufnahme wird sie erneut aktiviert.
+Auch MP4 mit Videoanteil darf über `AVPlayer.audiovisualBackgroundPlaybackPolicy =
+.continuesIfPossible` im Hintergrund weiterspielen. Erzwungenes Beenden der App beendet
+weiterhin die Wiedergabe. Sperrbildschirm-Steuerung/Now Playing ist nicht Teil dieses Fixes.
+
+Der Mini-Player sitzt mit `safeAreaInset` in jedem Tab-Inhalt oberhalb der nativen Tab-Leiste,
+nicht mehr unter einem zusammengesetzten `VStack` mit `TabView`. Ein gehosteter UI-Test
+prüft die tatsächlichen Bildschirmpositionen, Trefferflächen und Tab-Wechsel bei ausgewähltem
+Song. Die Version steht sichtbar links oben in der Bibliothek, um alte installierte Builds
+von diesem Update unterscheiden zu können. Die Screenshots allein belegen die installierte
+Version nicht; sie zeigen aber die alte UUID-Darstellung.
+
+Nach Installation bitte auf dem echten iPhone prüfen:
+
+1. In der Bibliothek steht `0.2.0 (2)`.
+2. `Kobosil - You Need The Drug.mp4` ohne Tags importieren: Künstler/Titel sind korrekt.
+3. Einen Song starten, dann Home, Suche und Bibliothek wechseln; Mini-Player bleibt oberhalb der Tabs.
+4. App verlassen und Bildschirm sperren: Audio läuft weiter; anschließend Pause/Play prüfen.
+5. Alte nicht rekonstruierbare Einträge gezielt löschen und die Originaldateien erneut importieren.
+
+Simulator-/Build-Prüfungen ersetzen keinen physischen iPhone-Test von Hintergrund-Audio.
+
 ## Phase 2
 
-Als Nächstes bieten sich Vollbild-Player, Hintergrund-/Lockscreen-Audio, Queue, Shuffle/Repeat, Playlists sowie Löschen und Bearbeiten der Bibliothek an.
+Als Nächstes bieten sich Lockscreen-Steuerung, Queue, Shuffle/Repeat, Playlists und Bearbeiten der Bibliothek an.

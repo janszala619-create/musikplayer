@@ -108,25 +108,25 @@ enum MetadataService {
         let title = await firstUsableString(in: items, key: .commonKeyTitle, identifiers: [
             .id3MetadataTitleDescription, .iTunesMetadataSongName,
             .quickTimeMetadataTitle, .quickTimeUserDataFullName
-        ])
+        ], placeholder: MetadataFallback.unknownTitle)
         let artist = await firstUsableString(in: items, key: .commonKeyArtist, identifiers: [
             .id3MetadataLeadPerformer, .iTunesMetadataArtist,
             .quickTimeMetadataArtist, .quickTimeUserDataArtist
-        ])
+        ], placeholder: MetadataFallback.unknownArtist)
         let album = await firstUsableString(in: items, key: .commonKeyAlbumName, identifiers: [
             .id3MetadataAlbumTitle, .iTunesMetadataAlbum,
             .quickTimeMetadataAlbum, .quickTimeUserDataAlbum
-        ])
+        ], placeholder: MetadataFallback.unknownAlbum)
         return MetadataFallback.resolve(title: title, artist: artist, album: album, originalFileName: originalFileName)
     }
 
     private static func firstUsableString(
-        in items: [AVMetadataItem], key: AVMetadataKey, identifiers: [AVMetadataIdentifier]
+        in items: [AVMetadataItem], key: AVMetadataKey, identifiers: [AVMetadataIdentifier], placeholder: String
     ) async -> String? {
         for item in matchingItems(in: items, key: key, identifiers: identifiers) {
             // A bad first candidate must not hide a later valid tag.
             if let value = try? await item.load(.stringValue),
-               let usable = MetadataFallback.usableText(value) {
+               let usable = MetadataFallback.usableText(value), usable != placeholder {
                 return usable
             }
         }

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+@MainActor
 struct LibraryView: View {
     @Environment(AudioPlayerService.self) private var player
     @Environment(\.modelContext) private var modelContext

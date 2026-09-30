@@ -6,6 +6,16 @@ import SwiftUI
 @testable import LocalMusic
 
 final class LocalMusicTests: XCTestCase {
+    @MainActor
+    func testDeletionRejectsPathsOutsideThePrivateAudioFolder() throws {
+        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let song = Song(title: "Keep", artist: "Artist", album: "Album", duration: 42, fileName: "../other.wav")
+        container.mainContext.insert(song)
+        try container.mainContext.save()
+        XCTAssertThrowsError(try MusicImportService.deleteSongs([song], from: container.mainContext))
+        XCTAssertEqual(try container.mainContext.fetch(FetchDescriptor<Song>()).count, 1)
+    }
+
     func testPlaceholderTagsDoNotOverrideOriginalFilename() {
         let text = MetadataFallback.resolve(title: MetadataFallback.unknownTitle, artist: MetadataFallback.unknownArtist, originalFileName: "Kobosil - You Need The Drug.mp4")
         XCTAssertEqual(text.title, "You Need The Drug")
@@ -205,8 +215,10 @@ final class LocalMusicTests: XCTestCase {
     func testLaterValidMetadataCandidateWinsOverBadTags() async {
         let text = await MetadataService.readText(from: [
             tag(.commonIdentifierTitle, "  " as NSString),
+            tag(.commonIdentifierTitle, MetadataFallback.unknownTitle as NSString),
             tag(.id3MetadataTitleDescription, UUID().uuidString as NSString),
             tag(.iTunesMetadataSongName, "Real Title" as NSString),
+            tag(.commonIdentifierArtist, MetadataFallback.unknownArtist as NSString),
             tag(.id3MetadataLeadPerformer, "Real Artist" as NSString),
             tag(.iTunesMetadataAlbum, "Real Album" as NSString)
         ], originalFileName: "Bad Filename.mp3")
