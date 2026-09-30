@@ -34,7 +34,12 @@ enum MusicImportService {
 
         // Capture provenance before copying/renaming while the source is accessible.
         let originalURL = sourceURL
-        let originalFileName = originalURL.lastPathComponent
+        let resourceValues = try? originalURL.resourceValues(forKeys: [.nameKey, .localizedNameKey])
+        let originalFileName = sourceFileName(
+            url: originalURL,
+            resourceName: resourceValues?.name,
+            localizedName: resourceValues?.localizedName
+        )
 
         let fileManager = FileManager.default
         guard fileManager.isReadableFile(atPath: sourceURL.path) else {
@@ -82,7 +87,9 @@ enum MusicImportService {
 
     static func repairLegacySongs(in context: ModelContext) async {
         do {
-            let pending = try context.fetch(FetchDescriptor<Song>(predicate: #Predicate { $0.metadataVersion < 1 }))
+            let pending = try context.fetch(FetchDescriptor<Song>()).filter {
+                $0.metadataVersion < currentMetadataVersion || MetadataFallback.isUUIDLike($0.title)
+            }
             for song in pending {
                 // A legacy storage name can be an original name only if it isn't a UUID.
                 let original = MetadataFallback.usableText(song.originalFileName)
@@ -102,6 +109,19 @@ enum MusicImportService {
         } catch {
             logger.error("Library metadata repair failed: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    static func sourceFileName(url: URL, resourceName: String?, localizedName: String?) -> String {
+        // A file provider can expose a temporary UUID URL while retaining a
+        // human-readable resource name. Use only names supplied by the source.
+        for candidate in [url.lastPathComponent, resourceName, localizedName] {
+            if let name = MetadataFallback.usableText(candidate),
+               MetadataFallback.originalFileNameText(name).title != nil {
+                return name
+            }
+        }
+        // Keep actual provenance even if unusable; the title resolver rejects it.
+        return url.lastPathComponent
     }
 
     static func applyLegacyRepair(to song: Song, metadata: ExtractedMetadata?, originalFileName: String?) {

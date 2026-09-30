@@ -2,9 +2,106 @@ import XCTest
 import AVFoundation
 import SwiftData
 import UIKit
+import SwiftUI
 @testable import LocalMusic
 
 final class LocalMusicTests: XCTestCase {
+    func testInstalledAppHasBackgroundAudioCapabilityAndIdentifiableVersion() {
+        let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
+        XCTAssertTrue(modes?.contains("audio") == true, "The built app, not just its project settings, must declare background audio.")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String, "0.2.0")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String, "2")
+    }
+
+    @MainActor
+    func testAudioAndVideoPlayerAllowsBackgroundPlayback() {
+        for suffix in ["mp3", "m4a", "mp4"] {
+            let player = AudioPlayerService.makePlayer(for: URL(fileURLWithPath: "/test.\(suffix)"))
+            XCTAssertEqual(player.audiovisualBackgroundPlaybackPolicy, .continuesIfPossible)
+        }
+    }
+
+    @MainActor
+    func testFileProviderNameIsUsedWhenURLIsInternalUUID() {
+        let url = URL(fileURLWithPath: "/provider/\(UUID().uuidString).mp4")
+        let name = MusicImportService.sourceFileName(url: url, resourceName: url.lastPathComponent, localizedName: "Kobosil - You Need The Drug.mp4")
+        XCTAssertEqual(name, "Kobosil - You Need The Drug.mp4")
+        let text = MetadataFallback.resolve(originalFileName: name)
+        XCTAssertEqual(text.title, "You Need The Drug")
+        XCTAssertEqual(text.artist, "Kobosil")
+        let original = URL(fileURLWithPath: "/source/Track Name.m4a")
+        XCTAssertEqual(MusicImportService.sourceFileName(url: original, resourceName: "Other.m4a", localizedName: nil), "Track Name.m4a")
+        let unknown = MusicImportService.sourceFileName(url: url, resourceName: nil, localizedName: "  ")
+        XCTAssertEqual(MetadataFallback.resolve(originalFileName: unknown).title, MetadataFallback.unknownTitle)
+    }
+
+    @MainActor
+    func testUUIDRecordIsRepairedEvenIfAlreadyMarkedCurrent() async throws {
+        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let song = Song(title: UUID().uuidString, artist: MetadataFallback.unknownArtist, album: MetadataFallback.unknownAlbum, duration: 42, fileName: "\(UUID().uuidString).mp4", originalFileName: "Kobosil - You Need The Drug.mp4", metadataVersion: MusicImportService.currentMetadataVersion)
+        container.mainContext.insert(song)
+        try container.mainContext.save()
+        await MusicImportService.repairLegacySongs(in: container.mainContext)
+        XCTAssertEqual(song.title, "You Need The Drug")
+        XCTAssertEqual(song.artist, "Kobosil")
+    }
+
+    @MainActor
+    func testNativeTabsRemainVisibleAndTappableWithActiveMiniPlayer() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let wav = try makeWAV(in: directory)
+        let source = directory.appendingPathComponent("Kobosil - Navigation Test.wav")
+        try FileManager.default.copyItem(at: wav, to: source)
+        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        try await MusicImportService.importFile(from: source, into: container.mainContext)
+        let song = try XCTUnwrap(container.mainContext.fetch(FetchDescriptor<Song>()).first)
+        defer {
+            if let url = try? MusicImportService.fileURL(for: song) { try? FileManager.default.removeItem(at: url) }
+        }
+        let player = AudioPlayerService()
+        player.play(song)
+        XCTAssertNil(player.errorMessage)
+        XCTAssertEqual(player.currentSongID, song.id)
+        XCTAssertEqual(AVAudioSession.sharedInstance().category, .playback)
+
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let originalWindow = scene.windows.first(where: \.isKeyWindow)
+        let window = UIWindow(windowScene: scene)
+        window.frame = scene.coordinateSpace.bounds
+        let host = UIHostingController(rootView: AppShellView().environment(player).modelContainer(container))
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer {
+            if player.isPlaying { player.togglePlayPause() }
+            window.isHidden = true
+            originalWindow?.makeKeyAndVisible()
+        }
+        try await Task.sleep(for: .milliseconds(500))
+        host.view.layoutIfNeeded()
+
+        func descendants(of view: UIView) -> [UIView] {
+            view.subviews.flatMap { [$0] + descendants(of: $0) }
+        }
+        let tabBar = try XCTUnwrap(descendants(of: host.view).compactMap { $0 as? UITabBar }.first)
+        XCTAssertFalse(tabBar.isHidden)
+        XCTAssertGreaterThan(tabBar.alpha, 0.9)
+        let controls = tabBar.subviews.compactMap { $0 as? UIControl }.sorted { $0.frame.minX < $1.frame.minX }
+        XCTAssertEqual(controls.count, 3)
+        XCTAssertEqual(tabBar.items?.map(\.title), ["Home", "Suche", "Bibliothek"])
+        for (index, control) in controls.enumerated() {
+            let frame = control.convert(control.bounds, to: window)
+            XCTAssertTrue(window.bounds.contains(frame), "Tab \(index) must be onscreen.")
+            let hit = try XCTUnwrap(window.hitTest(CGPoint(x: frame.midX, y: frame.midY), with: nil))
+            XCTAssertTrue(hit.isDescendant(of: control), "Mini-player must not intercept tab \(index).")
+            control.sendActions(for: .touchUpInside)
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertEqual(tabBar.selectedItem, tabBar.items?[index])
+            XCTAssertEqual(player.currentSongID, song.id, "Switching tabs must retain playback.")
+        }
+    }
+
     func testSongKeepsItsMetadata() {
         let song = Song(title: "Titel", artist: "Künstler", album: "Album", duration: 123, fileName: "song.mp3")
         XCTAssertEqual(song.title, "Titel")

@@ -13,19 +13,16 @@ struct AppShellView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TabView {
-                HomeView(songs: songs)
-                    .tabItem { Label("Home", systemImage: "house") }
-                SearchView(songs: songs)
-                    .tabItem { Label("Suche", systemImage: "magnifyingglass") }
-                LibraryView()
-                    .tabItem { Label("Bibliothek", systemImage: "books.vertical") }
-            }
-
-            MiniPlayer(song: currentSong) {
-                playerSheetSong = currentSong
-            }
+        TabView {
+            HomeView(songs: songs)
+                .safeAreaInset(edge: .bottom, spacing: 0) { miniPlayer }
+                .tabItem { Label("Home", systemImage: "house") }
+            SearchView(songs: songs)
+                .safeAreaInset(edge: .bottom, spacing: 0) { miniPlayer }
+                .tabItem { Label("Suche", systemImage: "magnifyingglass") }
+            LibraryView()
+                .safeAreaInset(edge: .bottom, spacing: 0) { miniPlayer }
+                .tabItem { Label("Bibliothek", systemImage: "books.vertical") }
         }
         .sheet(item: $playerSheetSong) { song in
             FullPlayerView(song: song)
@@ -40,6 +37,14 @@ struct AppShellView: View {
             Button("OK", role: .cancel) { player.errorMessage = nil }
         } message: {
             Text(player.errorMessage ?? "Unbekannter Fehler")
+        }
+    }
+
+    // Inset each tab's content, not the TabView itself: the native tab bar
+    // retains its own safe area and remains visible/tappable below the player.
+    private var miniPlayer: some View {
+        MiniPlayer(song: currentSong) {
+            playerSheetSong = currentSong
         }
     }
 }

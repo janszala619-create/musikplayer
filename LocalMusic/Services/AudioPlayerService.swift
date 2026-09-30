@@ -20,7 +20,7 @@ final class AudioPlayerService {
             }
             try configureAudioSession()
             player?.pause()
-            let newPlayer = AVPlayer(url: url)
+            let newPlayer = Self.makePlayer(for: url)
             player = newPlayer
             currentSongID = song.id
             observeEnd(of: newPlayer)
@@ -36,10 +36,24 @@ final class AudioPlayerService {
         guard let player else { return }
         if isPlaying {
             player.pause()
+            isPlaying = false
         } else {
-            player.play()
+            do {
+                try configureAudioSession()
+                player.play()
+                isPlaying = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
-        isPlaying.toggle()
+    }
+
+    static func makePlayer(for url: URL) -> AVPlayer {
+        let player = AVPlayer(url: url)
+        // MP4 files may also contain a video track. Only audio is presented by
+        // this app; allow it to continue when the app is no longer foreground.
+        player.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
+        return player
     }
 
     var currentTime: TimeInterval {

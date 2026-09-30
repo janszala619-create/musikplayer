@@ -79,6 +79,19 @@ jobs:
           cp -R build/Build/Products/Release-iphoneos/LocalMusic.app ipa/Payload/
           ditto -c -k --sequesterRsrc --keepParent ipa/Payload LocalMusic-unsigned.ipa
 
+      - name: Verify packaged background audio and version
+        run: |
+          python3 - <<'PY'
+          import plistlib, zipfile
+          with zipfile.ZipFile("LocalMusic-unsigned.ipa") as ipa:
+              info = plistlib.loads(ipa.read("Payload/LocalMusic.app/Info.plist"))
+          modes = info.get("UIBackgroundModes")
+          assert isinstance(modes, list) and "audio" in modes, f"Missing background audio: {modes!r}"
+          assert info["CFBundleShortVersionString"] == "0.2.0", info
+          assert info["CFBundleVersion"] == "2", info
+          print("Verified IPA: LocalMusic 0.2.0 (2), UIBackgroundModes =", modes)
+          PY
+
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:

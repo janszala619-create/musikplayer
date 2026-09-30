@@ -19,12 +19,14 @@ struct MiniPlayer: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Player für \(song.displayTitle) öffnen")
+                .accessibilityIdentifier("miniPlayer.open")
                 Spacer()
                 Button(action: player.togglePlayPause) {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .frame(width: 32, height: 32)
                 }
                 .accessibilityLabel(player.isPlaying ? "Pausieren" : "Wiedergabe starten")
+                .accessibilityIdentifier("miniPlayer.playPause")
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
