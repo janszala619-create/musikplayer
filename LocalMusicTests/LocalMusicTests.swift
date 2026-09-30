@@ -88,9 +88,8 @@ final class LocalMusicTests: XCTestCase {
         XCTAssertEqual(text, ResolvedSongText(title: "Real Title", artist: "Real Artist", album: "Real Album"))
     }
 
-    @MainActor
     func testArtworkSkipsInvalidCandidate() async throws {
-        let cover = try makeCover()
+        let cover = try await MainActor.run { try makeCover() }
         let artwork = await MetadataService.readArtwork(from: [
             tag(.commonIdentifierArtwork, Data([0, 1, 2]) as NSData),
             tag(.id3MetadataAttachedPicture, cover as NSData)
@@ -293,6 +292,7 @@ final class LocalMusicTests: XCTestCase {
         return url
     }
 
+    @MainActor
     private func export(from source: URL, to destination: URL, preset: String, type: AVFileType, metadata: [AVMetadataItem]) async throws {
         let session = try XCTUnwrap(AVAssetExportSession(asset: AVURLAsset(url: source), presetName: preset))
         session.outputURL = destination

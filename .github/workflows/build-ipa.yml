@@ -48,7 +48,24 @@ jobs:
           xcodebuild -project LocalMusic.xcodeproj -scheme LocalMusic
           -sdk iphonesimulator -configuration Debug
           -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
+          -resultBundlePath TestResults.xcresult
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test
+
+      - name: Report test failures
+        if: failure()
+        shell: bash
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            xcrun xcresulttool get --path TestResults.xcresult --format json | python3 -c '
+          import json, sys
+          result = json.load(sys.stdin)
+          for issue in result.get("issues", {}).get("testFailureSummaries", {}).get("_values", []):
+              test = issue.get("testCaseName", {}).get("_value", "Test")
+              message = issue.get("message", {}).get("_value", "Unknown failure")
+              location = issue.get("documentLocationInCreatingWorkspace", {}).get("url", {}).get("_value", "")
+              print(f"{test}: {message}\n{location}")
+          '
+          fi
 
       - name: Build unsigned device app
         run: >-
