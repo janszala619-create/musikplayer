@@ -36,6 +36,15 @@ jobs:
           ')"
           echo "SIMULATOR_ID=$simulator_id" >> "$GITHUB_ENV"
 
+      - name: Boot simulator before testing
+        run: |
+          python3 - <<'PY'
+          import os, subprocess
+          simulator = os.environ["SIMULATOR_ID"]
+          subprocess.run(["xcrun", "simctl", "boot", simulator], check=False)
+          subprocess.run(["xcrun", "simctl", "bootstatus", simulator, "-b"], check=True, timeout=180)
+          PY
+
       - name: Build for iOS Simulator
         run: >-
           xcodebuild -project LocalMusic.xcodeproj -scheme LocalMusic
@@ -61,6 +70,7 @@ jobs:
           -sdk iphonesimulator -configuration Debug -derivedDataPath simulator-build
           -destination "platform=iOS Simulator,id=$SIMULATOR_ID"
           -resultBundlePath TestResults.xcresult
+          -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test
 
       - name: Report test failures
