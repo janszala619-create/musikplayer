@@ -56,6 +56,14 @@ final class AudioPlayerService {
         return player
     }
 
+    func stop() {
+        player?.pause()
+        player = nil
+        endCancellable = nil
+        currentSongID = nil
+        isPlaying = false
+    }
+
     var currentTime: TimeInterval {
         guard let seconds = player?.currentTime().seconds, seconds.isFinite else { return 0 }
         return max(0, seconds)

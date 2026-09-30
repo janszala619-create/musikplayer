@@ -6,6 +6,34 @@ import SwiftUI
 @testable import LocalMusic
 
 final class LocalMusicTests: XCTestCase {
+    func testPlaceholderTagsDoNotOverrideOriginalFilename() {
+        let text = MetadataFallback.resolve(title: MetadataFallback.unknownTitle, artist: MetadataFallback.unknownArtist, originalFileName: "Kobosil - You Need The Drug.mp4")
+        XCTAssertEqual(text.title, "You Need The Drug")
+        XCTAssertEqual(text.artist, "Kobosil")
+    }
+
+    @MainActor
+    func testDeletingAnOldImportRemovesOnlyItsOwnStoredFile() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = try makeWAV(in: directory)
+        let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        try await MusicImportService.importFile(from: source, into: container.mainContext)
+        let song = try XCTUnwrap(container.mainContext.fetch(FetchDescriptor<Song>()).first)
+        let storedURL = try MusicImportService.fileURL(for: song)
+        defer { try? FileManager.default.removeItem(at: storedURL) }
+        let player = AudioPlayerService()
+        player.play(song)
+        player.stop()
+        XCTAssertNil(player.currentSongID)
+        XCTAssertFalse(player.isPlaying)
+        try MusicImportService.deleteSongs([song], from: container.mainContext)
+        XCTAssertTrue(try container.mainContext.fetch(FetchDescriptor<Song>()).isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: storedURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path), "Never delete the user's original file.")
+    }
+
     func testInstalledAppHasBackgroundAudioCapabilityAndIdentifiableVersion() {
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         XCTAssertTrue(modes?.contains("audio") == true, "The built app, not just its project settings, must declare background audio.")

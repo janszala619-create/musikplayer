@@ -3,6 +3,7 @@ import SwiftData
 import UniformTypeIdentifiers
 
 struct LibraryView: View {
+    @Environment(AudioPlayerService.self) private var player
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Song.importedAt, order: .reverse) private var songs: [Song]
     @State private var isImporting = false
@@ -17,9 +18,10 @@ struct LibraryView: View {
                     List {
                         Section {
                             ForEach(songs) { song in PlaySongButton(song: song) }
+                                .onDelete(perform: deleteSongs)
                         } footer: {
                             if songs.contains(where: { $0.displayTitle == MetadataFallback.unknownTitle }) {
-                                Text("Bei alten Imports ohne Originalnamen und Titel-Tags lässt sich der Name nicht wiederherstellen. Bitte die Originaldatei erneut importieren.")
+                                Text("Bei alten Imports ohne Originalnamen und Titel-Tags lässt sich der Name nicht wiederherstellen. Den Eintrag nach links wischen, löschen und die Originaldatei erneut importieren.")
                             }
                         }
                     }
@@ -58,7 +60,7 @@ struct LibraryView: View {
             }
         }
         .alert(item: $importError) { alert in
-            Alert(title: Text("Import fehlgeschlagen"), message: Text(alert.message), dismissButton: .default(Text("OK")))
+            Alert(title: Text("Bibliothek"), message: Text(alert.message), dismissButton: .default(Text("OK")))
         }
     }
 
@@ -66,6 +68,17 @@ struct LibraryView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
         return "\(version) (\(build))"
+    }
+
+    private func deleteSongs(at offsets: IndexSet) {
+        let selected = offsets.map { songs[$0] }
+        let deletingCurrentSong = selected.contains { $0.id == player.currentSongID }
+        do {
+            try MusicImportService.deleteSongs(selected, from: modelContext)
+            if deletingCurrentSong { player.stop() }
+        } catch {
+            importError = ImportAlert(message: error.localizedDescription)
+        }
     }
 }
 

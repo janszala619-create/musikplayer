@@ -88,7 +88,11 @@ enum MusicImportService {
     static func repairLegacySongs(in context: ModelContext) async {
         do {
             let pending = try context.fetch(FetchDescriptor<Song>()).filter {
-                $0.metadataVersion < currentMetadataVersion || MetadataFallback.isUUIDLike($0.title)
+                let fileText = MetadataFallback.originalFileNameText($0.originalFileName)
+                return $0.metadataVersion < currentMetadataVersion
+                    || MetadataFallback.usableText($0.title) == nil
+                    || ($0.title == MetadataFallback.unknownTitle && fileText.title != nil)
+                    || ($0.artist == MetadataFallback.unknownArtist && fileText.artist != nil)
             }
             for song in pending {
                 // A legacy storage name can be an original name only if it isn't a UUID.
@@ -155,5 +159,27 @@ enum MusicImportService {
             create: false
         ).appendingPathComponent("ImportedAudio", isDirectory: true)
         return folder.appendingPathComponent(song.fileName)
+    }
+
+    static func deleteSongs(_ songs: [Song], from context: ModelContext) throws {
+        let urls = try songs.map { song in
+            guard !song.fileName.isEmpty,
+                  song.fileName == (song.fileName as NSString).lastPathComponent,
+                  !song.fileName.contains("\\") else { throw MusicImportError.cannotAccessFile }
+            return try fileURL(for: song)
+        }
+        for song in songs { context.delete(song) }
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        // Never remove the audio before the library deletion was saved.
+        // A cleanup error leaves an orphan file, not a broken library entry.
+        for url in urls where FileManager.default.fileExists(atPath: url.path) {
+            do { try FileManager.default.removeItem(at: url) }
+            catch { logger.error("Deleted song file cleanup failed: \(error.localizedDescription, privacy: .public)") }
+        }
     }
 }

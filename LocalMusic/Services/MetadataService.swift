@@ -64,10 +64,14 @@ enum MetadataFallback {
         originalFileName: String?
     ) -> ResolvedSongText {
         let fileText = originalFileNameText(originalFileName)
+        func usableField(_ value: String?, placeholder: String) -> String? {
+            guard let text = usableText(value), text != placeholder else { return nil }
+            return text
+        }
         return ResolvedSongText(
-            title: usableText(title) ?? fileText.title ?? unknownTitle,
-            artist: usableText(artist) ?? fileText.artist ?? unknownArtist,
-            album: usableText(album) ?? unknownAlbum
+            title: usableField(title, placeholder: unknownTitle) ?? fileText.title ?? unknownTitle,
+            artist: usableField(artist, placeholder: unknownArtist) ?? fileText.artist ?? unknownArtist,
+            album: usableField(album, placeholder: unknownAlbum) ?? unknownAlbum
         )
     }
 }
