@@ -100,7 +100,7 @@ Version nicht; sie zeigen aber die alte UUID-Darstellung.
 
 Nach Installation bitte auf dem echten iPhone prüfen:
 
-1. In der Bibliothek steht `0.2.0 (2)`.
+1. In der Bibliothek steht `0.2.0 (3)` (Audyn).
 2. `Kobosil - You Need The Drug.mp4` ohne Tags importieren: Künstler/Titel sind korrekt.
 3. Einen Song starten, dann Home, Suche und Bibliothek wechseln; Mini-Player bleibt oberhalb der Tabs.
 4. App verlassen und Bildschirm sperren: Audio läuft weiter; anschließend Pause/Play prüfen.
@@ -108,12 +108,14 @@ Nach Installation bitte auf dem echten iPhone prüfen:
 
 Simulator-/Build-Prüfungen ersetzen keinen physischen iPhone-Test von Hintergrund-Audio.
 
-## Phase 2
+## Audyn – Name und App-Icon
 
 Seit Build `0.2.0 (3)` heißt die App **Audyn** und verwendet das bereitgestellte grün-türkise
 Musiknoten-Icon. Das Motiv wird nur auf 1024 × 1024 Pixel skaliert; Xcode erzeugt daraus
 die iPhone-/iPad-Größen. App-Kennung `com.localmusic.app`, SwiftData-Bibliothek,
 interne Projektnamen und Player-Verhalten bleiben erhalten. Die Paketprüfung prüft auch
 beide App-Namensfelder sowie die tatsächlich enthaltenen iPhone-/iPad-Icons.
+
+## Phase 2
 
 Als Nächstes bieten sich Lockscreen-Steuerung, Queue, Shuffle/Repeat, Playlists und Bearbeiten der Bibliothek an.
