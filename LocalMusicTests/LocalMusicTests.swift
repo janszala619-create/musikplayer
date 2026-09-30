@@ -175,14 +175,24 @@ final class LocalMusicTests: XCTestCase {
             tag(.iTunesMetadataCoverArt, cover as NSData)
         ])
         let mp4 = directory.appendingPathComponent("Kobosil - You Need The Drug.mp4")
-        try await export(from: m4a, to: mp4, preset: AVAssetExportPresetPassthrough, type: .mp4, metadata: [])
+        // Passthrough may retain source tags even with metadata = []; create a
+        // genuinely untagged source to exercise filename fallback independently.
+        let untaggedM4A = directory.appendingPathComponent("untagged.m4a")
+        try await export(from: wav, to: untaggedM4A, preset: AVAssetExportPresetAppleM4A, type: .m4a, metadata: [])
+        try await export(from: untaggedM4A, to: mp4, preset: AVAssetExportPresetPassthrough, type: .mp4, metadata: [])
+        let taggedMP4 = directory.appendingPathComponent("Kobosil - Worse Filename.mp4")
+        try await export(from: m4a, to: taggedMP4, preset: AVAssetExportPresetPassthrough, type: .mp4, metadata: [
+            tag(.iTunesMetadataSongName, "Embedded Title" as NSString),
+            tag(.iTunesMetadataAlbum, "Embedded Album" as NSString),
+            tag(.iTunesMetadataCoverArt, cover as NSData)
+        ])
         let container = try ModelContainer(for: Song.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        for source in [m4a, mp4] {
+        for source in [m4a, mp4, taggedMP4] {
             try await MusicImportService.importFile(from: source, into: container.mainContext)
         }
         let songs = try ModelContext(container).fetch(FetchDescriptor<Song>())
         defer { for song in songs { if let url = try? MusicImportService.fileURL(for: song) { try? FileManager.default.removeItem(at: url) } } }
-        XCTAssertEqual(songs.count, 2)
+        XCTAssertEqual(songs.count, 3)
         let importedM4A = try XCTUnwrap(songs.first { $0.originalFileName == m4a.lastPathComponent })
         XCTAssertEqual(importedM4A.title, "Embedded Title")
         XCTAssertEqual(importedM4A.artist, "Kobosil")
@@ -191,6 +201,13 @@ final class LocalMusicTests: XCTestCase {
         let importedMP4 = try XCTUnwrap(songs.first { $0.originalFileName == mp4.lastPathComponent })
         XCTAssertEqual(importedMP4.title, "You Need The Drug")
         XCTAssertEqual(importedMP4.artist, "Kobosil")
+        XCTAssertEqual(importedMP4.album, MetadataFallback.unknownAlbum)
+        XCTAssertNil(importedMP4.artworkData)
+        let importedTaggedMP4 = try XCTUnwrap(songs.first { $0.originalFileName == taggedMP4.lastPathComponent })
+        XCTAssertEqual(importedTaggedMP4.title, "Embedded Title")
+        XCTAssertEqual(importedTaggedMP4.artist, "Kobosil")
+        XCTAssertEqual(importedTaggedMP4.album, "Embedded Album")
+        XCTAssertEqual(importedTaggedMP4.artworkData, cover)
         for song in songs {
             XCTAssertTrue(MetadataFallback.isUUIDLike(song.fileName))
             XCTAssertFalse(MetadataFallback.isUUIDLike(song.title))
