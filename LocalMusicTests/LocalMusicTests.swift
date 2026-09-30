@@ -11,7 +11,7 @@ final class LocalMusicTests: XCTestCase {
         XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String, "Audyn")
         XCTAssertEqual(Bundle.main.bundleIdentifier, "com.localmusic.app", "Preserve the existing app identity and library when updating.")
         for key in ["CFBundleIcons", "CFBundleIcons~ipad"] {
-            let icons = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: key) as? [String: Any])
+            let icons = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: key) as? [String: Any], "Missing \(key): \(Bundle.main.infoDictionary ?? [:])")
             let primary = try XCTUnwrap(icons["CFBundlePrimaryIcon"] as? [String: Any])
             XCTAssertEqual(primary["CFBundleIconName"] as? String, "AppIcon")
             XCTAssertFalse((primary["CFBundleIconFiles"] as? [String] ?? []).isEmpty)
