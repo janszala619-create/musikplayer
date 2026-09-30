@@ -10,11 +10,11 @@ struct ExtractedMetadata: Sendable {
 }
 
 enum MetadataService {
-    static func read(from url: URL) async throws -> ExtractedMetadata {
+    static func read(from url: URL, fallbackTitle: String? = nil) async throws -> ExtractedMetadata {
         let asset = AVURLAsset(url: url)
         let metadata = try await asset.load(.commonMetadata)
         let duration = try await asset.load(.duration)
-        let fallbackTitle = url.deletingPathExtension().lastPathComponent
+        let fileNameTitle = fallbackTitle ?? url.deletingPathExtension().lastPathComponent
 
         func value(for key: AVMetadataKey) async throws -> String? {
             guard let item = metadata.first(where: { $0.commonKey == key }) else {
@@ -30,7 +30,7 @@ enum MetadataService {
             artwork = nil
         }
         return ExtractedMetadata(
-            title: try await value(for: .commonKeyTitle) ?? fallbackTitle,
+            title: try await value(for: .commonKeyTitle) ?? fileNameTitle,
             artist: try await value(for: .commonKeyArtist) ?? "Unbekannter Künstler",
             album: try await value(for: .commonKeyAlbumName) ?? "Unbekanntes Album",
             duration: duration.isNumeric ? duration.seconds : 0,

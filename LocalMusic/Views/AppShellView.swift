@@ -12,15 +12,16 @@ struct AppShellView: View {
     }
 
     var body: some View {
-        TabView {
-            HomeView(songs: songs)
-                .tabItem { Label("Home", systemImage: "house") }
-            SearchView(songs: songs)
-                .tabItem { Label("Suche", systemImage: "magnifyingglass") }
-            LibraryView()
-                .tabItem { Label("Bibliothek", systemImage: "books.vertical") }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        VStack(spacing: 0) {
+            TabView {
+                HomeView(songs: songs)
+                    .tabItem { Label("Home", systemImage: "house") }
+                SearchView(songs: songs)
+                    .tabItem { Label("Suche", systemImage: "magnifyingglass") }
+                LibraryView()
+                    .tabItem { Label("Bibliothek", systemImage: "books.vertical") }
+            }
+
             MiniPlayer(song: currentSong) {
                 playerSheetSong = currentSong
             }

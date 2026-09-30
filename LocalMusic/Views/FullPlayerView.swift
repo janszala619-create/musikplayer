@@ -10,13 +10,13 @@ struct FullPlayerView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 28) {
-                Spacer(minLength: 12)
+            VStack(spacing: 24) {
+                Spacer(minLength: 4)
 
                 ArtworkView(data: song.artworkData, size: 280)
                     .accessibilityLabel("Cover von \(song.title)")
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(song.title)
                         .font(.title2.weight(.bold))
                         .lineLimit(2)
@@ -64,7 +64,7 @@ struct FullPlayerView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 24)
             .navigationTitle("Wiedergabe")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -73,6 +73,8 @@ struct FullPlayerView: View {
                 }
             }
         }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 
     private func timeText(_ interval: TimeInterval) -> String {

@@ -48,7 +48,8 @@ enum MusicImportService {
         try fileManager.copyItem(at: sourceURL, to: destinationURL)
 
         do {
-            let metadata = try await MetadataService.read(from: destinationURL)
+            let sourceTitle = sourceURL.deletingPathExtension().lastPathComponent
+            let metadata = try await MetadataService.read(from: destinationURL, fallbackTitle: sourceTitle)
             let song = Song(
                 id: id,
                 title: metadata.title,

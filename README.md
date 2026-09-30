@@ -11,6 +11,7 @@ Eine lokale iOS-Musikbibliothek für eigene Dateien. V1 nutzt SwiftUI, SwiftData
 - SwiftData-basierte lokale Bibliothek
 - Song antippen: Wiedergabe starten; Mini-Player mit Play/Pause
 - Vollbild-Player durch Antippen des Mini-Players, mit Artwork, Fortschritt und ±15-Sekunden-Sprüngen
+- Wiedergabe läuft im Hintergrund weiter, solange die App nicht über den App-Umschalter beendet wird
 - Import- und Wiedergabefehler werden in der Oberfläche angezeigt
 
 ## Windows → GitHub → IPA
